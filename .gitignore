@@ -1,5 +1,6 @@
 .vscode
 .pio
+.DS_Store
 lib_old
 example/arduino/CST328touch
 board_info
