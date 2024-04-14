@@ -21,14 +21,14 @@ Here's what's done in the current release:
     - SSID: v1display
     - Password: password123
     - IP: 192.168.242.1
-- Web-based UI for configuration and device details (needs work)
+- Web-based UI for configuration and requesting device details (needs work)
 - Portrait and Landscape modes
 - "Store mode" for comparing portrait vs landscape (useful if modifying colors/layout)
 
-Here's the TODO as of April 15, 2024:
+Here's the TODO as of April 15, 2024: (in descending order of priority)
+- Deeper integration between web front-end and ESP32 backend
 - Dedicated Laser alerting
 - Add OTA functionality
-- Deeper integration between web front-end and ESP32 backend
 - Add graphics/screenshots into this README
 
 If you have suggestions or requests, please ping me on the [rdforum valentine one](https://www.rdforum.org/threads/136559/) sub on rdforum.
