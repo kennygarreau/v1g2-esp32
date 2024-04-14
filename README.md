@@ -40,3 +40,9 @@ If you have suggestions or requests, please ping me on the [rdforum valentine on
 2. Load the project in VSCode (or your IDE of choice)
 3. Compile and push to your board
 4. Turn on your V1, then connect the board to a USB-C power source in your vehicle
+
+# Picking a case
+
+Hopefully you have a 3d printer, or access to one. I used this design on [thingiverse](https://www.thingiverse.com/thing:6095867) to print a case,
+but if you search for "lilygo" or "t-display-s3" on thingiverse you should find some pretty cool ones. As folks use different ones I'll be happy
+to link them below.
