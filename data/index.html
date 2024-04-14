@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>v1g2.display</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav>
+        <a href="#">Home</a>
+        <a href="settings.html">Configuration</a>
+        <a href="update.html">Update</a>
+    </nav>
+    <div class="container">
+        <h2>ESP32 Board Information</h2>
+        <table>
+            <tr>
+                <th>Field</th>
+                <th>Value</th>
+            </tr>
+            <tr>
+                <td>Manufacturer</td>
+                <td id="manufacturer"></td>
+            </tr>
+            <tr>
+                <td>Model</td>
+                <td id="model"></td>
+            </tr>
+            <tr>
+                <td>Serial Number</td>
+                <td id="serial"></td>
+            </tr>
+            <tr>
+                <td>Hardware Version</td>
+                <td id="hardware-version"></td>
+            </tr>
+            <tr>
+                <td>Firmware Version</td>
+                <td id="firmware-version"></td>
+            </tr>
+            <tr>
+                <td>Software Version</td>
+                <td id="software-version"></td>
+            </tr>
+        </table>
+    </div>
+
+    <script>
+        // Function to populate board information
+        function populateBoardInfo() {
+            // Dummy data for demonstration
+            var boardInfo = {
+                manufacturer: "ESP32 Company",
+                model: "ESP32-123",
+                serial: "1234567890",
+                hardwareVersion: "1.0",
+                firmwareVersion: "1.1",
+                softwareVersion: "1.2"
+            };
+
+            document.getElementById("manufacturer").textContent = boardInfo.manufacturer;
+            document.getElementById("model").textContent = boardInfo.model;
+            document.getElementById("serial").textContent = boardInfo.serial;
+            document.getElementById("hardware-version").textContent = boardInfo.hardwareVersion;
+            document.getElementById("firmware-version").textContent = boardInfo.firmwareVersion;
+            document.getElementById("software-version").textContent = boardInfo.softwareVersion;
+        }
+
+        // Call the function to populate board information
+        populateBoardInfo();
+    </script>
+</body>
+</html>

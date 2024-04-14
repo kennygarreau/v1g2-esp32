@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>v1g2.display settings</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav>
+        <a href="/">Home</a>
+        <a href="settings.html">Configuration</a>
+        <a href="update.html">Update</a>
+    </nav>
+    <div class="container">
+        <h2>Settings</h2>
+        <form id="settingsForm">
+            <label for="displayOrientation">Display Orientation:</label>
+            <select id="displayOrientation">
+            <option value="0">Portrait</option>
+            <option value="1">Landscape</option>
+            </select>
+            <label for="textColor">Text Color (hex):</label>
+            <input type="text" id="textColor" placeholder="Enter hex color">
+            <label for="ssid">SSID:</label>
+            <input type="text" id="ssid" placeholder="Enter SSID">
+            <label for="password">Password:</label>
+            <input type="password" id="password" placeholder="Enter password">
+            <label for="wifiMode">Wi-Fi Mode:</label>
+            <select id="wifiMode">
+            <option value="0">Station</option>
+            <option value="1">Access Point</option>
+            </select>
+            <label for="isPortraitMode">Is Portrait Mode:</label>
+            <input type="checkbox" id="isPortraitMode">
+            <label for="disableBLE">Disable BLE:</label>
+            <input type="checkbox" id="disableBLE">
+            <input type="submit" value="Save">
+        </form>
+    </div>
+    <script>
+        document.getElementById("settingsForm").addEventListener("submit", function(event) {
+        event.preventDefault();
+        var formData = new FormData(this);
+        var settings = {
+            displayOrientation: parseInt(formData.get("displayOrientation")),
+            textColor: formData.get("textColor"),
+            ssid: formData.get("ssid"),
+            password: formData.get("password"),
+            wifiMode: parseInt(formData.get("wifiMode")),
+            isPortraitMode: document.getElementById("isPortraitMode").checked,
+            disableBLE: document.getElementById("disableBLE").checked
+        };
+        // Send settings to ESP32 server using fetch API or XMLHttpRequest
+        fetch('/updatePreferences', {
+            method: 'POST',
+            headers: {
+            'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(settings)
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log(data);
+            alert("Settings saved successfully");
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert("Error saving settings");
+        });
+        });
+    </script>
+</body>
+</html>
