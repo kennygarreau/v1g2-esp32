@@ -1,5 +1,8 @@
 .vscode
+.pio
+lib_old
 example/arduino/CST328touch
+board_info
 # Prerequisites
 *.d
 
