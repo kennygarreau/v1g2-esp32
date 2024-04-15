@@ -38,6 +38,8 @@ static std::string bogeyValue, barValue, bandValue, directionValue;
 
 TFT_eSPI tft = TFT_eSPI();
 DisplayController displayController(tft);
+TFT_eSprite& dispSprite = displayController.getSprite();
+
 Preferences preferences;
 
 struct v1Settings {
@@ -48,6 +50,7 @@ struct v1Settings {
   String wifiMode;
   bool isPortraitMode;
   bool disableBLE;
+  bool storeMode;
   };
 v1Settings settings;
 bool isPortraitMode;
@@ -274,6 +277,7 @@ void loadSettings() {
   settings.ssid = preferences.getString("ssid", "v1display");
   settings.password = preferences.getString("password", "password123");
   settings.disableBLE = preferences.getBool("disableBLE", false);
+  settings.storeMode = preferences.getBool("storeMode", false);
 }
 
 void saveSelectedConstants(const DisplayConstants& constants) {
@@ -290,8 +294,19 @@ void setup()
   pinMode(15, OUTPUT);
   digitalWrite(15, HIGH);
   pinMode(PIN_BUTTON_2, INPUT);
+  Serial.begin(115200);
+
+  Serial.println("Reading initial settings...");
   preferences.begin("settings", false);
   settings.isPortraitMode = preferences.getBool("isPortraitMode", true);
+  Serial.print("settings.isPortraitMode is set to: ");
+  Serial.println(settings.isPortraitMode ? "true" : "false");
+  Serial.print("MAX_X: ");
+  Serial.println(selectedConstants.MAX_X);
+  Serial.print("MAX_Y: ");
+  Serial.println(selectedConstants.MAX_Y);
+  Serial.print("settings.displayOrientation is set to: ");
+  Serial.println(String(settings.displayOrientation));
   
   loadSelectedConstants(selectedConstants);
   // if not initialized yet (first boot) - initialize settings
@@ -299,15 +314,13 @@ void setup()
     selectedConstants = settings.isPortraitMode ? portraitConstants : landscapeConstants;
 
     // Save selectedConstants to Preferences
+    Serial.println("CONFIG: this appears to be the first boot, saving defaults");
     saveSelectedConstants(selectedConstants);
   }
 
-  Serial.begin(115200);
   loadSettings();
   Serial.print("settings.displayOrientation is set to: ");
   Serial.println(String(settings.displayOrientation));
-  Serial.print("settings.isPortraitMode is set to: ");
-  Serial.println(settings.isPortraitMode ? "true" : "false");
 
   tft.begin();
   
@@ -316,13 +329,12 @@ void setup()
   tft.setTextColor(settings.textColor);
   tft.loadFont(nunitoFont);
   
-  TFT_eSprite& testSprite = displayController.getSprite();
-  testSprite.createSprite(selectedConstants.MAX_X, selectedConstants.MAX_Y);
+  dispSprite.createSprite(selectedConstants.MAX_X, selectedConstants.MAX_Y);
   
-  Serial.print("MAX_X: ");
+  Serial.print("Post-settings MAX_X: ");
   Serial.println(selectedConstants.MAX_X);
 
-  Serial.print("MAX_Y: ");
+  Serial.print("Post-settings MAX_Y: ");
   Serial.println(selectedConstants.MAX_Y);
 
   Serial.println("Connecting to WiFi");
@@ -342,19 +354,21 @@ void setup()
   server.onNotFound(handleNotFound);
   server.begin();
 
-  for (int i = 0; i < 20; i++) {
-    displayController.displayTestPortrait_2();
-    testSprite.pushSprite(0, 0);
-    delay(100);
-    testSprite.fillScreen(TFT_BLACK);
-    displayController.displayTestPortrait_3();
-    //displayController.displayTestHorizontal();
-    testSprite.pushSprite(0, 0);
-    delay(100);
-    testSprite.fillScreen(TFT_BLACK);
-  }
+  // uncomment below for display testing (TODO: move into a function)
+  // for (int i = 0; i < 20; i++) {
+  //   displayController.displayTestPortrait_2();
+  //   testSprite.pushSprite(0, 0);
+  //   delay(100);
+  //   testSprite.fillScreen(TFT_BLACK);
+  //   displayController.displayTestPortrait_3();
+  //   //displayController.displayTestHorizontal();
+  //   testSprite.pushSprite(0, 0);
+  //   delay(100);
+  //   testSprite.fillScreen(TFT_BLACK);
+  //   testSprite.pushSprite(0, 0);
+  // }
 
- if (settings.disableBLE) {
+ if (settings.disableBLE == false) {
   Serial.println("Searching for V1 bluetooth..");
   BLEDevice::init("ESP32 Client");
   pClient = BLEDevice::createClient();
@@ -373,33 +387,32 @@ void setup()
     Serial.println("Could not find a V1 connection");
   }
  }
+  preferences.end();
+
 }
 
 void loop() {  
   // web server handler
   server.handleClient();
+  //testSprite.createSprite(selectedConstants.MAX_X, selectedConstants.MAX_Y);
 
   int buttonState = digitalRead(PIN_BUTTON_2);
   if (buttonState == LOW) {
     //do something if button is pressed
   }
 
-  #ifndef DISABLE_BLE
+  if (settings.disableBLE == false) {
     if (pClient->isConnected()) {
       connected = true;
     } else {
       connectToServer();
     }
-  #endif
-
-  #ifdef DISPLAY_TEST
-    Serial.println("Initiating display test...");
-    displayController.displayTestPortrait_2();
-    delay(10000);
-  #endif
+ }
 
   std::string packet = hexData.c_str();
   PacketDecoder decoder(packet);
   std::string decoded = decoder.decode();
-  preferences.end();
+
+  dispSprite.pushSprite(0, 0);
+
 }

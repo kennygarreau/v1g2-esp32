@@ -31,6 +31,7 @@ Here's the TODO as of April 15, 2024: (in descending order of priority)
 - Add OTA functionality
 - Further code optimization and consolidation (a bit messy on initial push)
 - Add graphics/screenshots into this README
+- Figure out something to do with the buttons on the front?
 
 If you have suggestions or requests, please ping me on the [rdforum valentine one](https://www.rdforum.org/threads/136559/) sub on rdforum.
 

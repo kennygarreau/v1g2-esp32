@@ -16,13 +16,7 @@ public:
     void drawUpArrow(int x, int y, int size, uint16_t color);
     void drawDownArrow(int x, int y, int size, uint16_t color);
     void drawSideArrows(int x, int y, int width, int height, uint16_t color);
-    void displayBogeyCount(int x, int y, String bogeys, uint16_t color);
     void displayText(const char* text, int x, int y, uint16_t color);
-    //void displayFrequency(float frequency, int index, uint16_t color);
-    // void displayLaser(int x, uint16_t color);
-    // void displayKa(int x, uint16_t color);
-    // void displayK(int x, uint16_t color);
-    // void displayX(int x, uint16_t color);
     void drawSignalBars(int strength, uint16_t color);
     void drawHorizontalBars(int y, int strength, uint16_t color);
     void horizGradStr(int x, int y, int barHeight, int strength);
@@ -30,6 +24,12 @@ public:
     void displayTestHorizontal();
     void displayTestPortrait_2();
     void displayTestPortrait_3();
+    //void displayFrequency(float frequency, int index, uint16_t color);
+    // void displayLaser(int x, uint16_t color);
+    // void displayKa(int x, uint16_t color);
+    // void displayK(int x, uint16_t color);
+    // void displayX(int x, uint16_t color);
+    // void displayBogeyCount(int x, int y, String bogeys, uint16_t color);
 };
 
 #endif

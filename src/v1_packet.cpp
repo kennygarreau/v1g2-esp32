@@ -150,8 +150,7 @@ void PacketDecoder::decodeAlertData(const alertsVector& alerts) {
     /* 
     execute if we successfully write reqStartAlertData to clientWriteUUID
     */
-    
-    TFT_eSprite& UpArrowSprite = displayController.getSprite();
+    sprite.fillScreen(TFT_BLACK);
 
     for (int i = 0; i < alerts.size(); i++) {
         std::string freqMSB = alerts[i].substr(2, 2);
@@ -225,9 +224,7 @@ void PacketDecoder::decodeAlertData(const alertsVector& alerts) {
 
         if (priority) {
             if (directionValue == "FRONT") 
-            { UpArrowSprite.createSprite(selectedConstants.ARROW_FRONT_X, selectedConstants.ARROW_FRONT_Y);
-              displayController.drawUpArrow(selectedConstants.ARROW_FRONT_X, selectedConstants.ARROW_FRONT_Y, selectedConstants.ARROW_FRONT_WIDTH, UI_COLOR); 
-              UpArrowSprite.pushSprite(selectedConstants.ARROW_FRONT_X, selectedConstants.ARROW_FRONT_Y);}
+            { displayController.drawUpArrow(selectedConstants.ARROW_FRONT_X, selectedConstants.ARROW_FRONT_Y, selectedConstants.ARROW_FRONT_WIDTH, UI_COLOR);}
             else if (directionValue == "SIDE")
             { displayController.drawSideArrows(selectedConstants.ARROW_SIDE_X, selectedConstants.ARROW_SIDE_Y, selectedConstants.ARROW_SIDE_WIDTH, selectedConstants.ARROW_SIDE_HEIGHT, UI_COLOR); }
             else if (directionValue == "REAR")
@@ -365,7 +362,7 @@ std::string PacketDecoder::decode() {
             } else {
                 if (alertCountValue == 0) {
                     // this should blank the screen after the alertTable is cleared (no alerts present)
-                    tft.fillScreen(TFT_BLACK);
+                    sprite.fillScreen(TFT_BLACK);
                 }
                 // is there anything to be done here?
                 //tft.fillScreen(TFT_BLACK);

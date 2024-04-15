@@ -27,13 +27,13 @@ void DisplayController::drawSideArrows(int x, int y, int width, int height, uint
 }
 
 /* Currently unused, leave for future customization? */
-void DisplayController::displayBogeyCount(int x, int y, String bogeys, uint16_t color) {
-    tft.setTextColor(color);
-    tft.setTextSize(6);
-    tft.setTextFont(1);
-    tft.setCursor(x, y);
-    tft.print(bogeys);
-}
+// void DisplayController::displayBogeyCount(int x, int y, String bogeys, uint16_t color) {
+//     tft.setTextColor(color);
+//     tft.setTextSize(6);
+//     tft.setTextFont(1);
+//     tft.setCursor(x, y);
+//     tft.print(bogeys);
+// }
 
 void DisplayController::displayFreq(float freqVal, int x, int y, uint16_t color) {
     sprite.loadFont(nunitoFont);
@@ -109,33 +109,36 @@ void DisplayController::horizGradStr(int x, int y, int barHeight, int strength) 
 
   switch (strength) {
     case 1:
-        tft.fillRectHGradient(x, y, offset * strength, barHeight, TFT_GREEN, TFT_GREEN);
+        sprite.fillRectHGradient(x, y, offset * strength, barHeight, TFT_GREEN, TFT_GREEN);
         break;
     case 2:
-        tft.fillRectHGradient(x, y, offset * strength, barHeight, TFT_GREEN, TFT_GREENYELLOW);
+        sprite.fillRectHGradient(x, y, offset * strength, barHeight, TFT_GREEN, TFT_GREENYELLOW);
         break;
     case 3:
-        tft.fillRectHGradient(x, y, offset * strength, barHeight, TFT_GREEN, TFT_YELLOW);
+        sprite.fillRectHGradient(x, y, offset * strength, barHeight, TFT_GREEN, TFT_YELLOW);
         break;
     case 4:
-        tft.fillRectHGradient(x, y, offset * strength, barHeight, TFT_GREEN, TFT_ORANGE);
+        sprite.fillRectHGradient(x, y, offset * strength, barHeight, TFT_GREEN, TFT_ORANGE);
         break;
     case 5:
-        tft.fillRectHGradient(x, y, offset * strength, barHeight, TFT_GREEN, TFT_ORANGE);
+        sprite.fillRectHGradient(x, y, offset * strength, barHeight, TFT_GREEN, TFT_ORANGE);
         break;
     case 6:
-        tft.fillRectHGradient(x, y, offset * strength, barHeight, TFT_GREEN, TFT_BROWN);
+        sprite.fillRectHGradient(x, y, offset * strength, barHeight, TFT_GREEN, TFT_BROWN);
         break;
     case 7:
-        tft.fillRectHGradient(x, y, offset * strength, barHeight, TFT_GREEN, TFT_RED);
+        sprite.fillRectHGradient(x, y, offset * strength, barHeight, TFT_GREEN, TFT_RED);
         break;
     case 8:
-        tft.fillRectHGradient(x, y, offset * strength, barHeight, TFT_GREEN, TFT_RED);
+        sprite.fillRectHGradient(x, y, offset * strength, barHeight, TFT_GREEN, TFT_RED);
         break;
     }
 }
 
 void DisplayController::drawSignalBars(int strength, uint16_t color) {
+    
+    //sprite.fillScreen(TFT_BLACK);
+
     int startX = selectedConstants.BAR_START_X;
     int startY = selectedConstants.BAR_START_Y;
 
