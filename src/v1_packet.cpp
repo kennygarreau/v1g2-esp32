@@ -207,7 +207,68 @@ void PacketDecoder::decodeAlertData(const alertsVector& alerts) {
             Serial.print("error in alertCountMap key: ");
             Serial.println(alertIndexStr.c_str());
         }
-        
+
+        /* after this there should be no substring processing; we should only focus on painting the display */
+        // paint the main arrows and bars based on priority alerts
+
+        if (priority) {
+            // paint the directional arrow for the priority alert
+            if (directionValue == "FRONT") 
+            { displayController.drawUpArrow(selectedConstants.ARROW_FRONT_X, selectedConstants.ARROW_FRONT_Y, selectedConstants.ARROW_FRONT_WIDTH, UI_COLOR);}
+            else if (directionValue == "SIDE")
+            { displayController.drawSideArrows(selectedConstants.ARROW_SIDE_X, selectedConstants.ARROW_SIDE_Y, selectedConstants.ARROW_SIDE_WIDTH, selectedConstants.ARROW_SIDE_HEIGHT, UI_COLOR); }
+            else if (directionValue == "REAR")
+            { displayController.drawDownArrow(selectedConstants.ARROW_REAR_X, selectedConstants.ARROW_REAR_Y, selectedConstants.ARROW_REAR_WIDTH, UI_COLOR); }
+
+            // paint the main signal bar with the strength of the priority alert
+            if (rearStrengthVal > frontStrengthVal) { 
+                displayController.drawSignalBars(rearStrengthVal, UI_COLOR); 
+                displayController.drawHorizontalBars(selectedConstants.MHZ_DISP_Y + (selectedConstants.MHZ_DISP_Y_OFFSET * i) - 10, rearStrengthVal, UI_COLOR); 
+                }
+            else { 
+                displayController.drawSignalBars(frontStrengthVal, UI_COLOR); 
+                displayController.drawHorizontalBars(selectedConstants.MHZ_DISP_Y + (selectedConstants.MHZ_DISP_Y_OFFSET * i) - 10, frontStrengthVal, UI_COLOR);
+                }
+        }
+
+        // paint the small directional arrow of the alert
+        if (bandValue == "X") {
+            frontStrengthVal = mapXToBars(frontStrength);
+            rearStrengthVal = mapXToBars(rearStrength);
+            if (directionValue == "FRONT") {
+                displayController.drawUpArrow(selectedConstants.SMALL_ARROW_FRONT_X, selectedConstants.SMALL_ARROW_Y + (selectedConstants.MHZ_DISP_Y_OFFSET * i), selectedConstants.SMALL_ARROW_FRONT_WIDTH, UI_COLOR);
+            } else if (directionValue == "SIDE") {
+                displayController.drawSideArrows(selectedConstants.SMALL_ARROW_SIDE_X, selectedConstants.SMALL_ARROW_Y + (selectedConstants.MHZ_DISP_Y_OFFSET * i), selectedConstants.SMALL_ARROW_SIDE_WIDTH, selectedConstants.SMALL_ARROW_SIDE_HEIGHT, UI_COLOR);
+            } else if (directionValue == "REAR") {
+                displayController.drawDownArrow(selectedConstants.SMALL_ARROW_REAR_X, selectedConstants.SMALL_ARROW_Y + (selectedConstants.MHZ_DISP_Y_OFFSET * i), selectedConstants.SMALL_ARROW_REAR_WIDTH, UI_COLOR);
+            }
+        } 
+        else if (bandValue == "K") {
+            frontStrengthVal = mapKToBars(frontStrength);
+            rearStrengthVal = mapKToBars(rearStrength);
+            if (directionValue == "FRONT") {
+                displayController.drawUpArrow(selectedConstants.SMALL_ARROW_FRONT_X, selectedConstants.SMALL_ARROW_Y + (selectedConstants.MHZ_DISP_Y_OFFSET * i), selectedConstants.SMALL_ARROW_FRONT_WIDTH, UI_COLOR);
+            } else if (directionValue == "SIDE") {
+                displayController.drawSideArrows(selectedConstants.SMALL_ARROW_SIDE_X, selectedConstants.SMALL_ARROW_Y + (selectedConstants.MHZ_DISP_Y_OFFSET * i), selectedConstants.SMALL_ARROW_SIDE_WIDTH, selectedConstants.SMALL_ARROW_SIDE_HEIGHT, UI_COLOR);
+            } else if (directionValue == "REAR") {
+                displayController.drawDownArrow(selectedConstants.SMALL_ARROW_REAR_X, selectedConstants.SMALL_ARROW_Y + (selectedConstants.MHZ_DISP_Y_OFFSET * i), selectedConstants.SMALL_ARROW_REAR_WIDTH, UI_COLOR);
+            }
+        }
+        else if (bandValue == "KA") {
+            frontStrengthVal = mapKaToBars(frontStrength);
+            rearStrengthVal = mapKaToBars(rearStrength);        
+            if (directionValue == "FRONT") {
+                displayController.drawUpArrow(selectedConstants.SMALL_ARROW_FRONT_X, selectedConstants.SMALL_ARROW_Y + (selectedConstants.MHZ_DISP_Y_OFFSET * i), selectedConstants.SMALL_ARROW_FRONT_WIDTH, UI_COLOR);
+            } else if (directionValue == "SIDE") {
+                displayController.drawSideArrows(selectedConstants.SMALL_ARROW_SIDE_X, selectedConstants.SMALL_ARROW_Y + (selectedConstants.MHZ_DISP_Y_OFFSET * i), selectedConstants.SMALL_ARROW_SIDE_WIDTH, selectedConstants.SMALL_ARROW_SIDE_HEIGHT, UI_COLOR);
+            } else if (directionValue == "REAR") {
+                displayController.drawDownArrow(selectedConstants.SMALL_ARROW_REAR_X, selectedConstants.SMALL_ARROW_Y + (selectedConstants.MHZ_DISP_Y_OFFSET * i), selectedConstants.SMALL_ARROW_REAR_WIDTH, UI_COLOR);
+            }
+        }
+
+        // paint the frequency of the alert
+        displayController.displayFreq(freqGhz, selectedConstants.MHZ_DISP_X, selectedConstants.MHZ_DISP_Y + (selectedConstants.MHZ_DISP_Y_OFFSET * i), TFT_WHITE);
+
         // enable below for debugging
         std::string decodedPayload = "INDX:" + std::to_string(alertIndexValue) +
                                     " FREQ:" + std::to_string(freqMhz) +
@@ -216,73 +277,14 @@ void PacketDecoder::decodeAlertData(const alertsVector& alerts) {
                                     " RSTR:" + std::to_string(rearStrengthVal) +
                                     " BAND:" + bandValue +
                                     " BDIR:" + directionValue +
-                                    " PRIO:" + std::to_string(priority);
-        Serial.println(("respAlertData: " + decodedPayload).c_str());
-
-        /* after this there should be no substring processing; we should only focus on painting the display */
-        // paint the main arrows and bars based on priority alerts
-
-        if (priority) {
-            if (directionValue == "FRONT") 
-            { displayController.drawUpArrow(selectedConstants.ARROW_FRONT_X, selectedConstants.ARROW_FRONT_Y, selectedConstants.ARROW_FRONT_WIDTH, UI_COLOR);}
-            else if (directionValue == "SIDE")
-            { displayController.drawSideArrows(selectedConstants.ARROW_SIDE_X, selectedConstants.ARROW_SIDE_Y, selectedConstants.ARROW_SIDE_WIDTH, selectedConstants.ARROW_SIDE_HEIGHT, UI_COLOR); }
-            else if (directionValue == "REAR")
-            { displayController.drawUpArrow(selectedConstants.ARROW_REAR_X, selectedConstants.ARROW_REAR_Y, selectedConstants.ARROW_REAR_WIDTH, UI_COLOR); }
-
-            if (rearStrengthVal > frontStrengthVal) { 
-                displayController.drawSignalBars(rearStrengthVal, UI_COLOR); 
-                displayController.drawHorizontalBars(selectedConstants.MHZ_DISP_Y + (selectedConstants.MHZ_DISP_Y_OFFSET * i) - 10, rearStrengthVal, UI_COLOR); 
-                }
-            else { 
-                displayController.drawSignalBars(frontStrengthVal, UI_COLOR); 
-                displayController.drawHorizontalBars(selectedConstants.MHZ_DISP_Y + (selectedConstants.MHZ_DISP_Y_OFFSET * i) - 10, frontStrengthVal, UI_COLOR);
-                // need to verify the logic for "side" bars has an actual reading for frontStrength
-                }
-
-            displayController.displayFreq(freqGhz, selectedConstants.MHZ_DISP_X, selectedConstants.MHZ_DISP_Y + (selectedConstants.MHZ_DISP_Y_OFFSET * i), TFT_WHITE);
-        }
-
-        if (bandValue == "X") {
-            frontStrengthVal = mapXToBars(frontStrength);
-            rearStrengthVal = mapXToBars(rearStrength);
-            if (directionValue == "FRONT") {
-                displayController.drawUpArrow(selectedConstants.SMALL_ARROW_FRONT_X, selectedConstants.SMALL_ARROW_FRONT_Y + (selectedConstants.MHZ_DISP_Y_OFFSET * i), selectedConstants.SMALL_ARROW_FRONT_WIDTH, UI_COLOR);
-            } else if (directionValue == "SIDE") {
-                displayController.drawSideArrows(selectedConstants.SMALL_ARROW_SIDE_X, selectedConstants.SMALL_ARROW_SIDE_Y + (selectedConstants.MHZ_DISP_Y_OFFSET * i), selectedConstants.SMALL_ARROW_SIDE_WIDTH, selectedConstants.SMALL_ARROW_SIDE_HEIGHT, UI_COLOR);
-            } else if (directionValue == "REAR") {
-                displayController.drawDownArrow(selectedConstants.SMALL_ARROW_REAR_X, selectedConstants.SMALL_ARROW_REAR_Y + (selectedConstants.MHZ_DISP_Y_OFFSET * i), selectedConstants.SMALL_ARROW_REAR_WIDTH, UI_COLOR);
-            }
-        } 
-        else if (bandValue == "K") {
-            frontStrengthVal = mapKToBars(frontStrength);
-            rearStrengthVal = mapKToBars(rearStrength);
-            if (directionValue == "FRONT") {
-                displayController.drawUpArrow(selectedConstants.SMALL_ARROW_FRONT_X, selectedConstants.SMALL_ARROW_FRONT_Y + (selectedConstants.MHZ_DISP_Y_OFFSET * i), selectedConstants.SMALL_ARROW_FRONT_WIDTH, UI_COLOR);
-            } else if (directionValue == "SIDE") {
-                displayController.drawSideArrows(selectedConstants.SMALL_ARROW_SIDE_X, selectedConstants.SMALL_ARROW_SIDE_Y + (selectedConstants.MHZ_DISP_Y_OFFSET * i), selectedConstants.SMALL_ARROW_SIDE_WIDTH, selectedConstants.SMALL_ARROW_SIDE_HEIGHT, UI_COLOR);
-            } else if (directionValue == "REAR") {
-                displayController.drawDownArrow(selectedConstants.SMALL_ARROW_REAR_X, selectedConstants.SMALL_ARROW_REAR_Y + (selectedConstants.MHZ_DISP_Y_OFFSET * i), selectedConstants.SMALL_ARROW_REAR_WIDTH, UI_COLOR);
-            }
-        }
-        else if (bandValue == "KA") {
-            frontStrengthVal = mapKaToBars(frontStrength);
-            rearStrengthVal = mapKaToBars(rearStrength);        
-            if (directionValue == "FRONT") {
-                displayController.drawUpArrow(selectedConstants.SMALL_ARROW_FRONT_X, selectedConstants.SMALL_ARROW_FRONT_Y + (selectedConstants.MHZ_DISP_Y_OFFSET * i), selectedConstants.SMALL_ARROW_FRONT_WIDTH, UI_COLOR);
-            } else if (directionValue == "SIDE") {
-                displayController.drawSideArrows(selectedConstants.SMALL_ARROW_SIDE_X, selectedConstants.SMALL_ARROW_SIDE_Y + (selectedConstants.MHZ_DISP_Y_OFFSET * i), selectedConstants.SMALL_ARROW_SIDE_WIDTH, selectedConstants.SMALL_ARROW_SIDE_HEIGHT, UI_COLOR);
-            } else if (directionValue == "REAR") {
-                displayController.drawDownArrow(selectedConstants.SMALL_ARROW_REAR_X, selectedConstants.SMALL_ARROW_REAR_Y + (selectedConstants.MHZ_DISP_Y_OFFSET * i), selectedConstants.SMALL_ARROW_REAR_WIDTH, UI_COLOR);
-            }
-        }
+                                    " PRIO:" + std::to_string(priority) +
+                                    " decode(ms): ";
+        Serial.print(("respAlertData: " + decodedPayload).c_str());
     }
 }
 
-/*
-to deal with the alert table, initialize a vector 
-*/
 std::string PacketDecoder::decode() {
+    unsigned long startTimeMillis = millis();
 
     std::string sof = packet.substr(0, 2);
     if (sof != "AA") {
@@ -309,21 +311,21 @@ std::string PacketDecoder::decode() {
     }
     else if (packetID == "43") {
         /* we should do a light decode here */
-        bool alertTableUpdated;
+        //bool alertTableUpdated;
         std::string payload = packet.substr(10, packet.size() - 12);
 
-        if (payload == lastPayload) {
-            alertTableUpdated = false;
-        } 
-        else {
-            lastPayload = payload;
-            alertTableUpdated = true;
+        // 0418: need to test if this is what is causing the blackscreens and if it's even worth filtering here
+        // if (payload == lastPayload) {
+        //     alertTableUpdated = false;
+        // } 
+        // else {
+            // lastPayload = payload;
+            // alertTableUpdated = true;
             std::string alertIndexStr = packet.substr(10, 2);
 
             std::map<std::string, alertByte> alertByteMap;
             // {alertCount, alertIndex}
-            // Count: B0-B3, Index: B4-B7 - why is the math so whacky? 
-            // a: it's binary for the four bits for each var
+            // Count: B0-B3, Index: B4-B7; binary for the four bits for each var
             alertByteMap["00"] = {0, 0};
             alertByteMap["11"] = {1, 1};
             alertByteMap["12"] = {2, 1};
@@ -342,6 +344,7 @@ std::string PacketDecoder::decode() {
                 Serial.println(alertIndexStr.c_str());
             }
             
+            // 0418: this is unused, remove after testing
             std::string auxByte = payload.substr(12, 2);
             if (auxByte == "80") {priority = true;}
             else {priority = false;}
@@ -353,6 +356,7 @@ std::string PacketDecoder::decode() {
             // else {
             //     alertTable.push_back(payload);
             // }
+
             alertTable.push_back(payload);
             // check if the alertTable vector size is more than or equal to the tableSize (alerts.count) extracted from alertByte
             if (alertTable.size() >= alertCountValue) {
@@ -365,13 +369,15 @@ std::string PacketDecoder::decode() {
                     sprite.fillScreen(TFT_BLACK);
                 }
                 // is there anything to be done here?
-                //tft.fillScreen(TFT_BLACK);
+                Serial.println("untrapped alertCountValue and alertTable.size()");
             }
         }
+        unsigned long elapsedTimeMillis = millis() - startTimeMillis;
+        Serial.println(elapsedTimeMillis);
         return "";
     }
-    return "";
-}
+//     return "";
+// }
 
 /*
 the functions below are responsible for generating and sending packets to the v1.

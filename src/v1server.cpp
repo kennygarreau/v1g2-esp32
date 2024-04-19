@@ -394,17 +394,17 @@ void setup()
 void loop() {  
   // web server handler
   server.handleClient();
-  //testSprite.createSprite(selectedConstants.MAX_X, selectedConstants.MAX_Y);
 
-  int buttonState = digitalRead(PIN_BUTTON_2);
-  if (buttonState == LOW) {
-    //do something if button is pressed
-  }
+  // int buttonState = digitalRead(PIN_BUTTON_2);
+  // if (buttonState == LOW) {
+  //   //do something if button is pressed
+  // }
 
   if (settings.disableBLE == false) {
     if (pClient->isConnected()) {
       connected = true;
     } else {
+      Serial.println("disconnect: invoking connectToServer()");
       connectToServer();
     }
  }
@@ -414,5 +414,4 @@ void loop() {
   std::string decoded = decoder.decode();
 
   dispSprite.pushSprite(0, 0);
-
 }

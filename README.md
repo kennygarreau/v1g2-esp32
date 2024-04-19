@@ -39,6 +39,7 @@ If you have suggestions or requests, please ping me on the [rdforum valentine on
 
 1. Clone this repo
 2. Load the project in VSCode (or your IDE of choice)
+3. In PlatformIO - go to Project Tasks - v1server - Platform - Upload Filesystem Image
 3. Compile and push to your board
 4. Turn on your V1, then connect the board to a USB-C power source in your vehicle
 

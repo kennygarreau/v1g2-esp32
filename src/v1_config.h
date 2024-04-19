@@ -21,7 +21,7 @@ struct DisplayConstants {
     int ARROW_FRONT_WIDTH;
 
     int SMALL_ARROW_FRONT_X;
-    int SMALL_ARROW_FRONT_Y;
+    int SMALL_ARROW_Y;
     int SMALL_ARROW_FRONT_WIDTH;
 
     int ARROW_SIDE_X;

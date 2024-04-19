@@ -10,7 +10,6 @@ TFT_eSprite& DisplayController::getSprite() {
 }
 
 void DisplayController::drawUpArrow(int x, int y, int size, uint16_t color) {
-    //size = 80;
     sprite.fillTriangle(x, y - size / 4, x + size / 2, y + size / 4, x - size / 2, y + size / 4, color);
     sprite.fillRect(x - size / 4, y + size / 4, size / 2, size / 10, color);
 }
@@ -137,8 +136,6 @@ void DisplayController::horizGradStr(int x, int y, int barHeight, int strength) 
 
 void DisplayController::drawSignalBars(int strength, uint16_t color) {
     
-    //sprite.fillScreen(TFT_BLACK);
-
     int startX = selectedConstants.BAR_START_X;
     int startY = selectedConstants.BAR_START_Y;
 
@@ -194,13 +191,13 @@ void DisplayController::displayTestHorizontal() {
     drawDownArrow(selectedConstants.ARROW_REAR_X, selectedConstants.ARROW_REAR_Y, selectedConstants.ARROW_REAR_WIDTH, UI_COLOR);
     drawHorizontalBars(selectedConstants.MHZ_DISP_Y - 10, 1, UI_COLOR);
     displayFreq(24.297, selectedConstants.MHZ_DISP_X, selectedConstants.MHZ_DISP_Y + (selectedConstants.MHZ_DISP_Y_OFFSET * 0), TFT_WHITE);
-    drawUpArrow(selectedConstants.SMALL_ARROW_FRONT_X, selectedConstants.SMALL_ARROW_FRONT_Y, selectedConstants.SMALL_ARROW_FRONT_WIDTH, UI_COLOR);
+    drawUpArrow(selectedConstants.SMALL_ARROW_FRONT_X, selectedConstants.SMALL_ARROW_Y, selectedConstants.SMALL_ARROW_FRONT_WIDTH, UI_COLOR);
     drawHorizontalBars(selectedConstants.MHZ_DISP_Y + selectedConstants.MHZ_DISP_Y_OFFSET - 10, 6, UI_COLOR);
     displayFreq(10.837, selectedConstants.MHZ_DISP_X, selectedConstants.MHZ_DISP_Y + (selectedConstants.MHZ_DISP_Y_OFFSET * 1), TFT_WHITE);
-    drawDownArrow(selectedConstants.SMALL_ARROW_REAR_X, selectedConstants.SMALL_ARROW_REAR_Y, selectedConstants.SMALL_ARROW_REAR_WIDTH, UI_COLOR);
+    drawDownArrow(selectedConstants.SMALL_ARROW_REAR_X, selectedConstants.SMALL_ARROW_Y, selectedConstants.SMALL_ARROW_REAR_WIDTH, UI_COLOR);
     drawHorizontalBars(selectedConstants.MHZ_DISP_Y + selectedConstants.MHZ_DISP_Y_OFFSET * 2 - 10, 5, UI_COLOR);
     displayFreq(34.532, selectedConstants.MHZ_DISP_X, selectedConstants.MHZ_DISP_Y + (selectedConstants.MHZ_DISP_Y_OFFSET * 2), TFT_WHITE);
-    drawSideArrows(selectedConstants.SMALL_ARROW_SIDE_X, selectedConstants.SMALL_ARROW_SIDE_Y, selectedConstants.SMALL_ARROW_SIDE_WIDTH, selectedConstants.SMALL_ARROW_SIDE_HEIGHT, UI_COLOR);
+    drawSideArrows(selectedConstants.SMALL_ARROW_SIDE_X, selectedConstants.SMALL_ARROW_Y, selectedConstants.SMALL_ARROW_SIDE_WIDTH, selectedConstants.SMALL_ARROW_SIDE_HEIGHT, UI_COLOR);
 }
 
 void DisplayController::displayTestPortrait_2() {
@@ -213,19 +210,19 @@ void DisplayController::displayTestPortrait_2() {
     drawHorizontalBars(selectedConstants.MHZ_DISP_Y - 10, 6, UI_COLOR);
     displayFreq(24.150, selectedConstants.MHZ_DISP_X, selectedConstants.MHZ_DISP_Y + (selectedConstants.MHZ_DISP_Y_OFFSET * 0), TFT_WHITE);
     //displayText("24.150", MHZ_DISP_X, MHZ_DISP_Y, TFT_WHITE);
-    drawUpArrow(selectedConstants.SMALL_ARROW_FRONT_X, selectedConstants.SMALL_ARROW_FRONT_Y, selectedConstants.SMALL_ARROW_FRONT_WIDTH, UI_COLOR);
+    drawUpArrow(selectedConstants.SMALL_ARROW_FRONT_X, selectedConstants.SMALL_ARROW_Y, selectedConstants.SMALL_ARROW_FRONT_WIDTH, UI_COLOR);
     
     // second respAlertData grouping
     //horizGradStr(10, MHZ_DISP_Y + MHZ_DISP_Y_OFFSET - 10, 6, 5);
     drawHorizontalBars(selectedConstants.MHZ_DISP_Y + selectedConstants.MHZ_DISP_Y_OFFSET - 10, 4, UI_COLOR);
     displayFreq(10.526, selectedConstants.MHZ_DISP_X, selectedConstants.MHZ_DISP_Y + (selectedConstants.MHZ_DISP_Y_OFFSET * 1), TFT_WHITE);
-    drawDownArrow(selectedConstants.SMALL_ARROW_REAR_X, selectedConstants.SMALL_ARROW_REAR_Y, selectedConstants.SMALL_ARROW_REAR_WIDTH, UI_COLOR);
+    drawDownArrow(selectedConstants.SMALL_ARROW_REAR_X, selectedConstants.SMALL_ARROW_Y, selectedConstants.SMALL_ARROW_REAR_WIDTH, UI_COLOR);
     
     // third respAlertData grouping
     //horizGradStr(10, MHZ_DISP_Y + MHZ_DISP_Y_OFFSET * 2 - 10, 6, 2);
     drawHorizontalBars(selectedConstants.MHZ_DISP_Y + selectedConstants.MHZ_DISP_Y_OFFSET * 2 - 10, 2, UI_COLOR);
     displayFreq(34.709, selectedConstants.MHZ_DISP_X, selectedConstants.MHZ_DISP_Y + (selectedConstants.MHZ_DISP_Y_OFFSET * 2), TFT_WHITE);
-    drawSideArrows(selectedConstants.SMALL_ARROW_SIDE_X, selectedConstants.SMALL_ARROW_SIDE_Y, selectedConstants.SMALL_ARROW_SIDE_WIDTH, selectedConstants.SMALL_ARROW_SIDE_HEIGHT, UI_COLOR);
+    drawSideArrows(selectedConstants.SMALL_ARROW_SIDE_X, selectedConstants.SMALL_ARROW_Y, selectedConstants.SMALL_ARROW_SIDE_WIDTH, selectedConstants.SMALL_ARROW_SIDE_HEIGHT, UI_COLOR);
     drawSignalBars(6, TFT_RED);
 }
 
@@ -237,14 +234,14 @@ void DisplayController::displayTestPortrait_3() {
     // first respAlertData grouping
     drawHorizontalBars(selectedConstants.MHZ_DISP_Y - 10, 1, UI_COLOR);
     displayFreq(24.297, selectedConstants.MHZ_DISP_X, selectedConstants.MHZ_DISP_Y + (selectedConstants.MHZ_DISP_Y_OFFSET * 0), TFT_WHITE);
-    drawUpArrow(selectedConstants.SMALL_ARROW_FRONT_X, selectedConstants.SMALL_ARROW_FRONT_Y, selectedConstants.SMALL_ARROW_FRONT_WIDTH, UI_COLOR);
+    drawUpArrow(selectedConstants.SMALL_ARROW_FRONT_X, selectedConstants.SMALL_ARROW_Y, selectedConstants.SMALL_ARROW_FRONT_WIDTH, UI_COLOR);
     // second respAlertData grouping
     drawHorizontalBars(selectedConstants.MHZ_DISP_Y + selectedConstants.MHZ_DISP_Y_OFFSET - 10, 6, UI_COLOR);
     displayFreq(10.837, selectedConstants.MHZ_DISP_X, selectedConstants.MHZ_DISP_Y + (selectedConstants.MHZ_DISP_Y_OFFSET * 1), TFT_WHITE);
-    drawDownArrow(selectedConstants.SMALL_ARROW_REAR_X, selectedConstants.SMALL_ARROW_REAR_Y, selectedConstants.SMALL_ARROW_REAR_WIDTH, UI_COLOR);
+    drawDownArrow(selectedConstants.SMALL_ARROW_REAR_X, selectedConstants.SMALL_ARROW_Y, selectedConstants.SMALL_ARROW_REAR_WIDTH, UI_COLOR);
     // third respAlertData grouping
     drawHorizontalBars(selectedConstants.MHZ_DISP_Y + selectedConstants.MHZ_DISP_Y_OFFSET * 2 - 10, 5, UI_COLOR);
     displayFreq(34.536, selectedConstants.MHZ_DISP_X, selectedConstants.MHZ_DISP_Y + (selectedConstants.MHZ_DISP_Y_OFFSET * 2), TFT_WHITE);
-    drawSideArrows(selectedConstants.SMALL_ARROW_SIDE_X, selectedConstants.SMALL_ARROW_SIDE_Y, selectedConstants.SMALL_ARROW_SIDE_WIDTH, selectedConstants.SMALL_ARROW_SIDE_HEIGHT, UI_COLOR);
+    drawSideArrows(selectedConstants.SMALL_ARROW_SIDE_X, selectedConstants.SMALL_ARROW_Y, selectedConstants.SMALL_ARROW_SIDE_WIDTH, selectedConstants.SMALL_ARROW_SIDE_HEIGHT, UI_COLOR);
     drawSignalBars(2, TFT_RED);
 }
