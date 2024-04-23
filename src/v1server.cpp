@@ -269,7 +269,7 @@ void handleUpdate() {
 
 void loadSettings() {
   // 0 = portrait, 3 = landscape
-    //settings.isPortraitMode = preferences.getBool("isPortraitMode", true);
+  //settings.isPortraitMode = preferences.getBool("isPortraitMode", true);
   settings.displayOrientation = preferences.getInt("displayOrientation", 0);
   settings.textColor = preferences.getUShort("textColor", TFT_WHITE);
   settings.ssid = preferences.getString("ssid", "v1display");
@@ -390,7 +390,6 @@ void loop() {
     } else {
       Serial.println("disconnected - attempting reconnect");
       pBLEScan = BLEDevice::getScan();
-      //pBLEScan->setAdvertisedDeviceCallbacks(new MyAdvertisedDeviceCallbacks());
       pBLEScan->setActiveScan(true);
       connectToServer();
       
@@ -403,12 +402,16 @@ void loop() {
     }
  }
 
+  // decode loop takes 6-7ms
   std::string packet = hexData.c_str();
   PacketDecoder decoder(packet);
   std::string decoded = decoder.decode();
-  
-  // sprite push takes 28ms
-  dispSprite.pushSprite(0, 0);
+
+  // don't update the display if we're processing null packets (no alertTable upda)
+  if (decoded.length() > 10) {
+    // sprite push takes 28ms
+    dispSprite.pushSprite(0, 0);
+  }
 
   // unsigned long elapsedTimeMillis = millis() - startTimeMillis;
   // Serial.print("screen paint time (ms): ");
