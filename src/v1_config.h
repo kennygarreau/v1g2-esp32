@@ -66,12 +66,6 @@ extern bool isPortraitMode;
 // unset below to debug display (store mode)
 //#define DISPLAY_TEST
 
-//#define LANDSCAPE_L
-//#define LANDSCAPE_R
-//#define PORTRAIT_1 // original prototype
-//#define PORTRAIT_2 // L-R bars at top, arrows in middle, band(MHz) listings by color at bottom
-//#define PORTRAIT_3 // vertical bar + arrows at top, band(MHz) listings by color at bottom
-
 // set ORIENTATION to 0 for portrait, 1 for landscape (USB on right) or 3 for landscape (USB on left)
 #ifdef LANDSCAPE_L
     #define ORIENTATION 3
@@ -198,3 +192,7 @@ static BLEUUID infDisplayDataUUID("92A0B2CE-9E05-11E2-AA59-F23C91AEC05E"); // V1
 static BLEUUID clientWriteUUID("92A0B6D4-9E05-11E2-AA59-F23C91AEC05E"); // client out V1 in SHORT
 //static BLEUUID char4UUID("92A0B8D2-9E05-11E2-AA59-F23C91AEC05E"); // client out V1 in LONG
 //static BLEUUID char6UUID("92A0BAD4-9E05-11E2-AA59-F23C91AEC05E"); // write and write without response
+
+struct samplePackets {
+    
+};

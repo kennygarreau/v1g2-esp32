@@ -106,8 +106,6 @@ class MyClientCallback : public BLEClientCallbacks {
     void onDisconnect(BLEClient* pClient) {
       connected = false;
       Serial.println("Disconnected from V1");
-      delay(5000);
-      connectToServer();
     }
 };
 
@@ -305,8 +303,6 @@ void setup()
   Serial.println(selectedConstants.MAX_X);
   Serial.print("MAX_Y: ");
   Serial.println(selectedConstants.MAX_Y);
-  Serial.print("settings.displayOrientation is set to: ");
-  Serial.println(String(settings.displayOrientation));
   
   loadSelectedConstants(selectedConstants);
   // if not initialized yet (first boot) - initialize settings
@@ -354,20 +350,6 @@ void setup()
   server.onNotFound(handleNotFound);
   server.begin();
 
-  // uncomment below for display testing (TODO: move into a function)
-  // for (int i = 0; i < 20; i++) {
-  //   displayController.displayTestPortrait_2();
-  //   testSprite.pushSprite(0, 0);
-  //   delay(100);
-  //   testSprite.fillScreen(TFT_BLACK);
-  //   displayController.displayTestPortrait_3();
-  //   //displayController.displayTestHorizontal();
-  //   testSprite.pushSprite(0, 0);
-  //   delay(100);
-  //   testSprite.fillScreen(TFT_BLACK);
-  //   testSprite.pushSprite(0, 0);
-  // }
-
  if (settings.disableBLE == false) {
   Serial.println("Searching for V1 bluetooth..");
   BLEDevice::init("ESP32 Client");
@@ -392,26 +374,43 @@ void setup()
 }
 
 void loop() {  
+  // unsigned long startTimeMillis = millis();
+
   // web server handler
   server.handleClient();
 
-  // int buttonState = digitalRead(PIN_BUTTON_2);
-  // if (buttonState == LOW) {
-  //   //do something if button is pressed
-  // }
+  int buttonState = digitalRead(PIN_BUTTON_2);
+  if (buttonState == LOW) {
+    //do something if button is pressed
+  }
 
   if (settings.disableBLE == false) {
     if (pClient->isConnected()) {
       connected = true;
     } else {
-      Serial.println("disconnect: invoking connectToServer()");
+      Serial.println("disconnected - attempting reconnect");
+      pBLEScan = BLEDevice::getScan();
+      //pBLEScan->setAdvertisedDeviceCallbacks(new MyAdvertisedDeviceCallbacks());
+      pBLEScan->setActiveScan(true);
       connectToServer();
+      
+      if (connected) {
+        displayReader();
+        infDisplayDataCharacteristic->registerForNotify(notifyDisplayCallback);
+      } else {
+      Serial.println("Could not find a V1 connection");
+      }
     }
  }
 
   std::string packet = hexData.c_str();
   PacketDecoder decoder(packet);
   std::string decoded = decoder.decode();
-
+  
+  // sprite push takes 28ms
   dispSprite.pushSprite(0, 0);
+
+  // unsigned long elapsedTimeMillis = millis() - startTimeMillis;
+  // Serial.print("screen paint time (ms): ");
+  // Serial.println(elapsedTimeMillis);
 }

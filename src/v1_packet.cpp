@@ -13,7 +13,7 @@ struct alertByte {
 static std::string barValue, bogeyValue, directionValue, bandValue;
 static std::string lastPayload = "";
 int frontStrengthVal, rearStrengthVal;
-bool priority;
+bool priority, junkAlert;
 static int alertCountValue, alertIndexValue;
 float freqGhz;
 alertsVector alertTable;
@@ -52,9 +52,6 @@ int hexToDecimal(const std::string& hexStr) {
 }
 
 int mapXToBars(const std::string& hex) {
-    /*
-    update: does the v2 actually process six bars?
-    */
     int decimalValue = std::stoi(hex, nullptr, 16);
 
     if (decimalValue == 0x00) {return 0;}
@@ -278,6 +275,7 @@ void PacketDecoder::decodeAlertData(const alertsVector& alerts) {
                                     " BAND:" + bandValue +
                                     " BDIR:" + directionValue +
                                     " PRIO:" + std::to_string(priority) +
+                                    " JUNK:" + std::to_string(junkAlert) +
                                     " decode(ms): ";
         Serial.print(("respAlertData: " + decodedPayload).c_str());
     }
@@ -344,10 +342,10 @@ std::string PacketDecoder::decode() {
                 Serial.println(alertIndexStr.c_str());
             }
             
-            // 0418: this is unused, remove after testing
             std::string auxByte = payload.substr(12, 2);
             if (auxByte == "80") {priority = true;}
-            else {priority = false;}
+            else if (auxByte == "40") {junkAlert = true;}
+            else {priority = false; junkAlert = false;}
             
             // if the packet is a priority for the alert table, insert at the beginning of the alertTable
             // if (priority) {
@@ -369,7 +367,8 @@ std::string PacketDecoder::decode() {
                     sprite.fillScreen(TFT_BLACK);
                 }
                 // is there anything to be done here?
-                Serial.println("untrapped alertCountValue and alertTable.size()");
+                Serial.print("alertTable.size(): " + alertTable.size());
+                Serial.println("alertCountValue: " + alertCountValue);
             }
         }
         unsigned long elapsedTimeMillis = millis() - startTimeMillis;
