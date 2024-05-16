@@ -25,9 +25,8 @@ Here's what's done in the current release:
 - Portrait and Landscape modes
 - "Store mode" for comparing portrait vs landscape (useful if modifying colors/layout)
 
-Here's the TODO as of April 15, 2024: (in descending order of priority)
+Here's the TODO as of May 16, 2024: (in descending order of priority)
 - Deeper integration between web front-end and ESP32 backend
-- Dedicated Laser alerting
 - Add OTA functionality
 - Further code optimization and consolidation (a bit messy on initial push)
 - Add graphics/screenshots into this README
@@ -48,3 +47,10 @@ If you have suggestions or requests, please ping me on the [rdforum valentine on
 Hopefully you have a 3d printer, or access to one. I used this design on [thingiverse](https://www.thingiverse.com/thing:6095867) to print a case,
 but if you search for "lilygo" or "t-display-s3" on thingiverse you should find some pretty cool ones. As folks use different ones I'll be happy
 to link them below.
+
+# Debugging
+
+In the event you'd like to debug or troubleshoot, your best bet is to open VScode, open the serial monitor and then connect your ESP32 device directly
+to your laptop. The device will function as normal, but you'll have the added benefit of being able to see the debug functionality printed to your
+console. That'll include some detailed information on the size of the alert table, the index of the alert triggered, the type of alert, band value,
+direction, signal strength (front and rear), priority and junk alert status. There are LOTS of debug points available in the code if you look for them.
