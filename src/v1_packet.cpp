@@ -13,6 +13,7 @@ struct alertByte {
 static std::string barValue, bogeyValue, directionValue, bandValue;
 static std::string lastPayload = "";
 int frontStrengthVal, rearStrengthVal;
+int arrowColor = TFT_YELLOW;
 bool priority, junkAlert;
 static int alertCountValue, alertIndexValue;
 float freqGhz;
@@ -115,25 +116,20 @@ std::string PacketDecoder::decodeDisplayData() {
     std::string payload = packet.substr(10, packet.size() - 12);
 
     if (payload.size() != 18) {
-        return "Invalid displayData payload length!";
+        return "err pkt";
     }
 
     std::string bandPlusArrow = payload.substr(6, 2);
-    if (bandPlusArrow == "21") {
-        bandValue = "LASER!";
-        directionValue = "FRONT";
-    } else if (bandPlusArrow == "81") {
-        bandValue = "LASER!";
-        directionValue = "REAR";
+    if (bandPlusArrow == "21" || bandPlusArrow == "81") {
+        bandValue = "LASER";
+        directionValue = (bandPlusArrow == "21") ? "FRONT" : "REAR";
+        sprite.fillScreen(TFT_RED);
+        displayController.displayText(bandValue.c_str(), selectedConstants.MHZ_DISP_X, selectedConstants.MHZ_DISP_Y, TFT_WHITE);
     } else {
         bandValue = "";
         directionValue = "";
     }
    
-    /*
-    paint laser alert to displayController
-    */
-    
     std::string decodedPayload = "BND:" + bandValue +
                                 " DIR:" + directionValue +
                                 " ";
@@ -147,6 +143,9 @@ void PacketDecoder::decodeAlertData(const alertsVector& alerts) {
     /* 
     execute if we successfully write reqStartAlertData to clientWriteUUID
     */
+    frontStrengthVal = 0;
+    rearStrengthVal = 0;
+
     sprite.fillScreen(TFT_BLACK);
 
     for (int i = 0; i < alerts.size(); i++) {
@@ -161,6 +160,8 @@ void PacketDecoder::decodeAlertData(const alertsVector& alerts) {
         std::string bandArrowDef = alerts[i].substr(10, 2);
 
         std::map<std::string, BandDirection> bandArrowMap;
+            bandArrowMap["21"] = {"LASER", "FRONT"};
+            bandArrowMap["81"] = {"LASER", "REAR"};
             bandArrowMap["24"] = {"K", "FRONT"};
             bandArrowMap["44"] = {"K", "SIDE"};
             bandArrowMap["84"] = {"K", "REAR"};
@@ -181,6 +182,11 @@ void PacketDecoder::decodeAlertData(const alertsVector& alerts) {
             Serial.println("error in bandArrowMap key");
         }
         std::string alertIndexStr = alerts[i].substr(0, 2);
+
+        std::string auxByte = alerts[i].substr(12, 2);
+        if (auxByte == "80") {priority = true;}
+        else if (auxByte == "40") {junkAlert = true;}
+        else {priority = false; junkAlert = false;}
 
         std::map<std::string, alertByte> alertByteMap;
         // {alertCount, alertIndex}
@@ -207,25 +213,8 @@ void PacketDecoder::decodeAlertData(const alertsVector& alerts) {
 
         /* after this there should be no substring processing; we should only focus on painting the display */
         // paint the main arrows and bars based on priority alerts
-
         if (priority) {
-            // paint the directional arrow for the priority alert
-            if (directionValue == "FRONT") 
-            { displayController.drawUpArrow(selectedConstants.ARROW_FRONT_X, selectedConstants.ARROW_FRONT_Y, selectedConstants.ARROW_FRONT_WIDTH, UI_COLOR);}
-            else if (directionValue == "SIDE")
-            { displayController.drawSideArrows(selectedConstants.ARROW_SIDE_X, selectedConstants.ARROW_SIDE_Y, selectedConstants.ARROW_SIDE_WIDTH, selectedConstants.ARROW_SIDE_HEIGHT, UI_COLOR); }
-            else if (directionValue == "REAR")
-            { displayController.drawDownArrow(selectedConstants.ARROW_REAR_X, selectedConstants.ARROW_REAR_Y, selectedConstants.ARROW_REAR_WIDTH, UI_COLOR); }
-
-            // paint the main signal bar with the strength of the priority alert
-            if (rearStrengthVal > frontStrengthVal) { 
-                displayController.drawSignalBars(rearStrengthVal, UI_COLOR); 
-                displayController.drawHorizontalBars(selectedConstants.MHZ_DISP_Y + (selectedConstants.MHZ_DISP_Y_OFFSET * i) - 10, rearStrengthVal, UI_COLOR); 
-                }
-            else { 
-                displayController.drawSignalBars(frontStrengthVal, UI_COLOR); 
-                displayController.drawHorizontalBars(selectedConstants.MHZ_DISP_Y + (selectedConstants.MHZ_DISP_Y_OFFSET * i) - 10, frontStrengthVal, UI_COLOR);
-                }
+            arrowColor = TFT_RED;
         }
 
         // paint the small directional arrow of the alert
@@ -262,63 +251,89 @@ void PacketDecoder::decodeAlertData(const alertsVector& alerts) {
                 displayController.drawDownArrow(selectedConstants.SMALL_ARROW_REAR_X, selectedConstants.SMALL_ARROW_Y + (selectedConstants.MHZ_DISP_Y_OFFSET * i), selectedConstants.SMALL_ARROW_REAR_WIDTH, UI_COLOR);
             }
         }
+        else if (bandValue == "LASER") {
+            sprite.fillScreen(TFT_RED);
+            displayController.displayText(bandValue.c_str(), selectedConstants.MHZ_DISP_X, selectedConstants.MHZ_DISP_Y, TFT_WHITE);
+            arrowColor = TFT_YELLOW;
+        }
+        
+        // paint the directional arrow(s) - this should work for the prio alert now, so we may want to move this block
+        if (directionValue == "FRONT") 
+        { displayController.drawUpArrow(selectedConstants.ARROW_FRONT_X, selectedConstants.ARROW_FRONT_Y, selectedConstants.ARROW_FRONT_WIDTH, arrowColor);}
+        else if (directionValue == "SIDE")
+        { displayController.drawSideArrows(selectedConstants.ARROW_SIDE_X, selectedConstants.ARROW_SIDE_Y, selectedConstants.ARROW_SIDE_WIDTH, selectedConstants.ARROW_SIDE_HEIGHT, arrowColor); }
+        else if (directionValue == "REAR")
+        { displayController.drawDownArrow(selectedConstants.ARROW_REAR_X, selectedConstants.ARROW_REAR_Y, selectedConstants.ARROW_REAR_WIDTH, arrowColor); }
+
+        // paint the main signal bar
+        if (rearStrengthVal > frontStrengthVal) { 
+            displayController.drawSignalBars(rearStrengthVal, UI_COLOR); 
+            displayController.drawHorizontalBars(selectedConstants.MHZ_DISP_Y + (selectedConstants.MHZ_DISP_Y_OFFSET * i) - 10, rearStrengthVal, UI_COLOR); 
+        }
+        else { 
+            displayController.drawSignalBars(frontStrengthVal, UI_COLOR); 
+            displayController.drawHorizontalBars(selectedConstants.MHZ_DISP_Y + (selectedConstants.MHZ_DISP_Y_OFFSET * i) - 10, frontStrengthVal, UI_COLOR);
+        }
 
         // paint the frequency of the alert
         displayController.displayFreq(freqGhz, selectedConstants.MHZ_DISP_X, selectedConstants.MHZ_DISP_Y + (selectedConstants.MHZ_DISP_Y_OFFSET * i), TFT_WHITE);
 
         // enable below for debugging
         std::string decodedPayload = "INDX:" + std::to_string(alertIndexValue) +
-                                    " FREQ:" + std::to_string(freqMhz) +
+                                    //" FREQ:" + std::to_string(freqMhz) +
                                     " FREQ_GHZ:" + std::to_string(freqGhz) +
                                     " FSTR:" + std::to_string(frontStrengthVal) +
                                     " RSTR:" + std::to_string(rearStrengthVal) +
                                     " BAND:" + bandValue +
                                     " BDIR:" + directionValue +
                                     " PRIO:" + std::to_string(priority) +
-                                    " JUNK:" + std::to_string(junkAlert) +
-                                    " decode(ms): ";
-        Serial.print(("respAlertData: " + decodedPayload).c_str());
+                                    " JUNK:" + std::to_string(junkAlert);
+                                    //+ " decode(ms): ";
+        Serial.println(("respAlertData: " + decodedPayload).c_str());
     }
 }
 
 std::string PacketDecoder::decode() {
-    unsigned long startTimeMillis = millis();
+    //unsigned long startTimeMillis = millis();
 
     std::string sof = packet.substr(0, 2);
     if (sof != "AA") {
-        return "Invalid start of frame!";
+        return "err SOF";
     }
 
     std::string endOfFrame = packet.substr(packet.length() - 2);
     if (endOfFrame != "AB") {
-        return "Invalid end of frame!";
+        return "err EOF";
     }
 
     std::string packetID = packet.substr(6, 2);
     
     if (packetID == "31") {
         // we should add some logic here around not processing identical packets
+        // bool infDataUpdated;
+        // std::string payload = packet.substr(10, packet.length() - 12);
+
         // if (payload == lastPayload) {
-        //     alertTableUpdated = false;
+        //     infDataUpdated = false;
+        //     return "";
         // }
         // else {
         //     lastPayload = payload;
-        //     alertTableUpdated = true;
+        //     infDataUpdated = true;
             return decodeDisplayData();
-        // }
+        //}
     }
     else if (packetID == "43") {
         /* we should do a light decode here */
-        //bool alertTableUpdated;
-        std::string payload = packet.substr(10, packet.size() - 12);
-
-        // 0418: need to test if this is what is causing the blackscreens and if it's even worth filtering here
-        // if (payload == lastPayload) {
-        //     alertTableUpdated = false;
-        // } 
-        // else {
-            // lastPayload = payload;
-            // alertTableUpdated = true;
+        bool alertTableUpdated;
+        std::string payload = packet.substr(10, packet.length() - 12);
+        
+        if (payload == lastPayload) {
+            alertTableUpdated = false;
+        } 
+        else {
+            lastPayload = payload;
+            alertTableUpdated = true;
             std::string alertIndexStr = packet.substr(10, 2);
 
             std::map<std::string, alertByte> alertByteMap;
@@ -341,19 +356,6 @@ std::string PacketDecoder::decode() {
                 Serial.print("error in alertCountMap key: ");
                 Serial.println(alertIndexStr.c_str());
             }
-            
-            std::string auxByte = payload.substr(12, 2);
-            if (auxByte == "80") {priority = true;}
-            else if (auxByte == "40") {junkAlert = true;}
-            else {priority = false; junkAlert = false;}
-            
-            // if the packet is a priority for the alert table, insert at the beginning of the alertTable
-            // if (priority) {
-            //     alertTable.insert(alertTable.begin(), payload);
-            // }
-            // else {
-            //     alertTable.push_back(payload);
-            // }
 
             alertTable.push_back(payload);
             // check if the alertTable vector size is more than or equal to the tableSize (alerts.count) extracted from alertByte
@@ -367,16 +369,15 @@ std::string PacketDecoder::decode() {
                     sprite.fillScreen(TFT_BLACK);
                 }
                 // is there anything to be done here?
-                Serial.print("alertTable.size(): " + alertTable.size());
-                Serial.println("alertCountValue: " + alertCountValue);
             }
+            sprite.pushSprite(0,0);
+        //unsigned long elapsedTimeMillis = millis() - startTimeMillis;
+        //Serial.println(elapsedTimeMillis);
         }
-        unsigned long elapsedTimeMillis = millis() - startTimeMillis;
-        Serial.println(elapsedTimeMillis);
         return "";
     }
-//     return "";
-// }
+    return "";
+}
 
 /*
 the functions below are responsible for generating and sending packets to the v1.

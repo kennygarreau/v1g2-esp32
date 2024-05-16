@@ -39,6 +39,7 @@ static std::string bogeyValue, barValue, bandValue, directionValue;
 TFT_eSPI tft = TFT_eSPI();
 DisplayController displayController(tft);
 TFT_eSprite& dispSprite = displayController.getSprite();
+TFT_eSprite signalStrengthDisplay = TFT_eSprite(&tft);
 
 Preferences preferences;
 
@@ -54,6 +55,8 @@ struct v1Settings {
   };
 v1Settings settings;
 bool isPortraitMode;
+int loopCounter = 0;
+unsigned long lastMillis = 0;
 
 DisplayConstants portraitConstants = {170, 320, 10, 160, 54, 10, 96, 110, 32, 80, 144, 172, 32, 78, 70, 64, 10, 134, 280, 20, 5,
   110, 108, 74, 144, 230, 32, 35, 10, 6, 20, 4};
@@ -92,7 +95,6 @@ class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
 
 void connectToServer() {
     if (!connected) {
-      Serial.println("Scanning for V1...");
       scanAndConnect();
     }
 }
@@ -100,12 +102,10 @@ void connectToServer() {
 class MyClientCallback : public BLEClientCallbacks {
     void onConnect(BLEClient* pClient) {
       connected = true;
-      Serial.println("Connected to V1");
     }
 
     void onDisconnect(BLEClient* pClient) {
       connected = false;
-      Serial.println("Disconnected from V1");
     }
 };
 
@@ -171,38 +171,38 @@ void startupInfo() {
   }
 }
 
-void getHardwareInfo() {
-  if (pClient && pClient->isConnected()) {
-    if (!infoRemoteService) {
-      infoRemoteService = pClient->getService(deviceInfoUUID);
-      if (infoRemoteService == nullptr) {
-        Serial.println("Failed to find infoRemoteService");
-        return;
-      }
-    }
+// void getHardwareInfo() {
+//   if (pClient && pClient->isConnected()) {
+//     if (!infoRemoteService) {
+//       infoRemoteService = pClient->getService(deviceInfoUUID);
+//       if (infoRemoteService == nullptr) {
+//         Serial.println("Failed to find infoRemoteService");
+//         return;
+//       }
+//     }
   
-  std::map<std::string, BLERemoteCharacteristic*>* pCharacteristics = infoRemoteService->getCharacteristics();
-    if (pCharacteristics) {
-      if (pCharacteristics->count("00002A29-0000-1000-8000-00805F9B34FB")) {
-          BLERemoteCharacteristic* manufacturerIDChar = (*pCharacteristics)["00002A29-0000-1000-8000-00805F9B34FB"];
-          std::string manufacturerIDValue = manufacturerIDChar->readValue();
-          Serial.println(manufacturerIDValue.c_str());
-      }
+//   std::map<std::string, BLERemoteCharacteristic*>* pCharacteristics = infoRemoteService->getCharacteristics();
+//     if (pCharacteristics) {
+//       if (pCharacteristics->count("00002A29-0000-1000-8000-00805F9B34FB")) {
+//           BLERemoteCharacteristic* manufacturerIDChar = (*pCharacteristics)["00002A29-0000-1000-8000-00805F9B34FB"];
+//           std::string manufacturerIDValue = manufacturerIDChar->readValue();
+//           Serial.println(manufacturerIDValue.c_str());
+//       }
 
-      if (pCharacteristics->count("00002A27-0000-1000-8000-00805F9B34FB")) {
-          BLERemoteCharacteristic* hardwareRevisionChar = (*pCharacteristics)["00002A27-0000-1000-8000-00805F9B34FB"];
-          std::string hardwareRevisionValue = hardwareRevisionChar->readValue();
-          Serial.println(hardwareRevisionValue.c_str());
-      }
+//       if (pCharacteristics->count("00002A27-0000-1000-8000-00805F9B34FB")) {
+//           BLERemoteCharacteristic* hardwareRevisionChar = (*pCharacteristics)["00002A27-0000-1000-8000-00805F9B34FB"];
+//           std::string hardwareRevisionValue = hardwareRevisionChar->readValue();
+//           Serial.println(hardwareRevisionValue.c_str());
+//       }
 
-      if (pCharacteristics->count("00002A24-0000-1000-8000-00805F9B34FB")) {
-          BLERemoteCharacteristic* modelNumberChar = (*pCharacteristics)["00002A24-0000-1000-8000-00805F9B34FB"];
-          std::string modelNumberValue = modelNumberChar->readValue();
-          Serial.println(modelNumberValue.c_str());
-      }
-    }
-  }
-}
+//       if (pCharacteristics->count("00002A24-0000-1000-8000-00805F9B34FB")) {
+//           BLERemoteCharacteristic* modelNumberChar = (*pCharacteristics)["00002A24-0000-1000-8000-00805F9B34FB"];
+//           std::string modelNumberValue = modelNumberChar->readValue();
+//           Serial.println(modelNumberValue.c_str());
+//       }
+//     }
+//   }
+// }
 
 void displayReader() {
   if (pClient && pClient->isConnected()) {
@@ -286,9 +286,23 @@ void loadSelectedConstants(DisplayConstants& constants) {
     preferences.getBytes("selectedConstants", &constants, sizeof(DisplayConstants));
 }
 
+int getBluetoothSignalStrength() {
+  int rssi = pClient->getRssi();
+  return rssi;
+}
+
+void updateSignalStrengthDisplay() {
+    // Clear signal strength display sprite
+    signalStrengthDisplay.fillSprite(TFT_BLACK);
+    // Retrieve and display Bluetooth signal strength
+    int rssi = getBluetoothSignalStrength(); // Function to get Bluetooth signal strength
+    signalStrengthDisplay.setTextColor(TFT_BLUE);
+    signalStrengthDisplay.drawString(String(rssi), 0, 0);
+}
+
 void setup()
 {
-  delay(3000);
+  delay(1500);
   pinMode(15, OUTPUT);
   digitalWrite(15, HIGH);
   pinMode(PIN_BUTTON_2, INPUT);
@@ -299,10 +313,10 @@ void setup()
   settings.isPortraitMode = preferences.getBool("isPortraitMode", true);
   Serial.print("settings.isPortraitMode is set to: ");
   Serial.println(settings.isPortraitMode ? "true" : "false");
-  Serial.print("MAX_X: ");
-  Serial.println(selectedConstants.MAX_X);
-  Serial.print("MAX_Y: ");
-  Serial.println(selectedConstants.MAX_Y);
+  // Serial.print("MAX_X: ");
+  // Serial.println(selectedConstants.MAX_X);
+  // Serial.print("MAX_Y: ");
+  // Serial.println(selectedConstants.MAX_Y);
   
   loadSelectedConstants(selectedConstants);
   // if not initialized yet (first boot) - initialize settings
@@ -318,20 +332,25 @@ void setup()
   Serial.print("settings.displayOrientation is set to: ");
   Serial.println(String(settings.displayOrientation));
 
+  Serial.print("MAX_X: ");
+  Serial.println(selectedConstants.MAX_X);
+
+  Serial.print("MAX_Y: ");
+  Serial.println(selectedConstants.MAX_Y);
+
   tft.begin();
   
   tft.setRotation(settings.displayOrientation);
   tft.fillScreen(TFT_BLACK);
   tft.setTextColor(settings.textColor);
-  tft.loadFont(nunitoFont);
+  //tft.loadFont(nunitoFont);
   
-  dispSprite.createSprite(selectedConstants.MAX_X, selectedConstants.MAX_Y);
-  
-  Serial.print("Post-settings MAX_X: ");
-  Serial.println(selectedConstants.MAX_X);
+  int rssiSpriteWidth = 30;
+  int rssiSpriteHeight = 12;
 
-  Serial.print("Post-settings MAX_Y: ");
-  Serial.println(selectedConstants.MAX_Y);
+  dispSprite.createSprite(selectedConstants.MAX_X, selectedConstants.MAX_Y - rssiSpriteHeight);
+  signalStrengthDisplay.setColorDepth(8);
+  signalStrengthDisplay.createSprite(rssiSpriteWidth, rssiSpriteHeight);
 
   Serial.println("Connecting to WiFi");
   wifiSetup();
@@ -374,8 +393,6 @@ void setup()
 }
 
 void loop() {  
-  // unsigned long startTimeMillis = millis();
-
   // web server handler
   server.handleClient();
 
@@ -407,13 +424,19 @@ void loop() {
   PacketDecoder decoder(packet);
   std::string decoded = decoder.decode();
 
-  // don't update the display if we're processing null packets (no alertTable upda)
-  if (decoded.length() > 10) {
-    // sprite push takes 28ms
-    dispSprite.pushSprite(0, 0);
+  unsigned long currentMillis = millis();
+  
+  if (currentMillis - lastMillis >= 1000) {
+    Serial.print("Loops executed: ");
+    Serial.println(loopCounter);
+    
+    updateSignalStrengthDisplay();
+    signalStrengthDisplay.pushSprite(tft.width() - signalStrengthDisplay.width(), tft.height() - signalStrengthDisplay.height());
+
+    lastMillis = currentMillis;
+    loopCounter = 0;
   }
 
-  // unsigned long elapsedTimeMillis = millis() - startTimeMillis;
-  // Serial.print("screen paint time (ms): ");
-  // Serial.println(elapsedTimeMillis);
+  loopCounter++;
+
 }

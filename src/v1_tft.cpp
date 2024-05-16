@@ -36,14 +36,17 @@ void DisplayController::drawSideArrows(int x, int y, int width, int height, uint
 
 void DisplayController::displayFreq(float freqVal, int x, int y, uint16_t color) {
     sprite.loadFont(nunitoFont);
+    sprite.setTextColor(color);
     sprite.setCursor(x, y);
     sprite.print(freqVal, 3);
+    sprite.unloadFont();
 }
 
 void DisplayController::displayText(const char* text, int x, int y, uint16_t color) {
     sprite.setTextColor(color);
     sprite.setTextSize(1);
-    sprite.setTextFont(3);
+    sprite.setTextFont(1);
+    sprite.setCursor(x, y);
     sprite.print(text);
 }
 
