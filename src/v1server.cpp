@@ -342,7 +342,7 @@ void setup()
   
   tft.setRotation(settings.displayOrientation);
   tft.fillScreen(TFT_BLACK);
-  tft.setTextColor(settings.textColor);
+  //tft.setTextColor(settings.textColor);
   //tft.loadFont(nunitoFont);
   
   int rssiSpriteWidth = 30;
@@ -427,8 +427,9 @@ void loop() {
   unsigned long currentMillis = millis();
   
   if (currentMillis - lastMillis >= 1000) {
-    Serial.print("Loops executed: ");
-    Serial.println(loopCounter);
+    // uncomment below for debugging
+    //Serial.print("Loops executed: ");
+    //Serial.println(loopCounter);
     
     updateSignalStrengthDisplay();
     signalStrengthDisplay.pushSprite(tft.width() - signalStrengthDisplay.width(), tft.height() - signalStrengthDisplay.height());

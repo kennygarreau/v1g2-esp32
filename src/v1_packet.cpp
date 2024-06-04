@@ -216,6 +216,14 @@ void PacketDecoder::decodeAlertData(const alertsVector& alerts) {
         if (priority) {
             arrowColor = TFT_RED;
         }
+        
+        // paint the directional arrow(s) - this should work for the prio alert now, so we may want to move this block
+        if (directionValue == "FRONT") 
+        { displayController.drawUpArrow(selectedConstants.ARROW_FRONT_X, selectedConstants.ARROW_FRONT_Y, selectedConstants.ARROW_FRONT_WIDTH, arrowColor);}
+        else if (directionValue == "SIDE")
+        { displayController.drawSideArrows(selectedConstants.ARROW_SIDE_X, selectedConstants.ARROW_SIDE_Y, selectedConstants.ARROW_SIDE_WIDTH, selectedConstants.ARROW_SIDE_HEIGHT, arrowColor); }
+        else if (directionValue == "REAR")
+        { displayController.drawDownArrow(selectedConstants.ARROW_REAR_X, selectedConstants.ARROW_REAR_Y, selectedConstants.ARROW_REAR_WIDTH, arrowColor); }
 
         // paint the small directional arrow of the alert
         if (bandValue == "X") {
@@ -255,29 +263,24 @@ void PacketDecoder::decodeAlertData(const alertsVector& alerts) {
             sprite.fillScreen(TFT_RED);
             displayController.displayText(bandValue.c_str(), selectedConstants.MHZ_DISP_X, selectedConstants.MHZ_DISP_Y, TFT_WHITE);
             arrowColor = TFT_YELLOW;
+            sprite.pushSprite(0,0);
+            delay(1500);
         }
         
-        // paint the directional arrow(s) - this should work for the prio alert now, so we may want to move this block
-        if (directionValue == "FRONT") 
-        { displayController.drawUpArrow(selectedConstants.ARROW_FRONT_X, selectedConstants.ARROW_FRONT_Y, selectedConstants.ARROW_FRONT_WIDTH, arrowColor);}
-        else if (directionValue == "SIDE")
-        { displayController.drawSideArrows(selectedConstants.ARROW_SIDE_X, selectedConstants.ARROW_SIDE_Y, selectedConstants.ARROW_SIDE_WIDTH, selectedConstants.ARROW_SIDE_HEIGHT, arrowColor); }
-        else if (directionValue == "REAR")
-        { displayController.drawDownArrow(selectedConstants.ARROW_REAR_X, selectedConstants.ARROW_REAR_Y, selectedConstants.ARROW_REAR_WIDTH, arrowColor); }
+        if (bandValue != "LASER") {
+            // paint the main signal bar
+            if (rearStrengthVal > frontStrengthVal) { 
+                displayController.drawSignalBars(rearStrengthVal, UI_COLOR); 
+                displayController.drawHorizontalBars(selectedConstants.MHZ_DISP_Y + (selectedConstants.MHZ_DISP_Y_OFFSET * i) - 10, rearStrengthVal, UI_COLOR); 
+            }
+            else { 
+                displayController.drawSignalBars(frontStrengthVal, UI_COLOR); 
+                displayController.drawHorizontalBars(selectedConstants.MHZ_DISP_Y + (selectedConstants.MHZ_DISP_Y_OFFSET * i) - 10, frontStrengthVal, UI_COLOR);
+            }
 
-        // paint the main signal bar
-        if (rearStrengthVal > frontStrengthVal) { 
-            displayController.drawSignalBars(rearStrengthVal, UI_COLOR); 
-            displayController.drawHorizontalBars(selectedConstants.MHZ_DISP_Y + (selectedConstants.MHZ_DISP_Y_OFFSET * i) - 10, rearStrengthVal, UI_COLOR); 
+            // paint the frequency of the alert
+            displayController.displayFreq(freqGhz, selectedConstants.MHZ_DISP_X, selectedConstants.MHZ_DISP_Y + (selectedConstants.MHZ_DISP_Y_OFFSET * i), TFT_WHITE);
         }
-        else { 
-            displayController.drawSignalBars(frontStrengthVal, UI_COLOR); 
-            displayController.drawHorizontalBars(selectedConstants.MHZ_DISP_Y + (selectedConstants.MHZ_DISP_Y_OFFSET * i) - 10, frontStrengthVal, UI_COLOR);
-        }
-
-        // paint the frequency of the alert
-        displayController.displayFreq(freqGhz, selectedConstants.MHZ_DISP_X, selectedConstants.MHZ_DISP_Y + (selectedConstants.MHZ_DISP_Y_OFFSET * i), TFT_WHITE);
-
         // enable below for debugging
         std::string decodedPayload = "INDX:" + std::to_string(alertIndexValue) +
                                     //" FREQ:" + std::to_string(freqMhz) +
