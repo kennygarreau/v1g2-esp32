@@ -51,7 +51,7 @@ struct v1Settings {
   String wifiMode;
   bool isPortraitMode;
   bool disableBLE;
-  bool storeMode;
+  bool displayTest;
   };
 v1Settings settings;
 bool isPortraitMode;
@@ -275,7 +275,7 @@ void loadSettings() {
   settings.ssid = preferences.getString("ssid", "v1display");
   settings.password = preferences.getString("password", "password123");
   settings.disableBLE = preferences.getBool("disableBLE", false);
-  settings.storeMode = preferences.getBool("storeMode", false);
+  settings.displayTest = preferences.getBool("displayTest", false);
 }
 
 void saveSelectedConstants(const DisplayConstants& constants) {
@@ -311,6 +311,10 @@ void setup()
   Serial.println("Reading initial settings...");
   preferences.begin("settings", false);
   settings.isPortraitMode = preferences.getBool("isPortraitMode", true);
+  settings.displayTest = preferences.putBool("displayTest", false);
+  // Uncomment below for testing display
+  //settings.displayTest = preferences.putBool("displayTest", true);
+
   Serial.print("settings.isPortraitMode is set to: ");
   Serial.println(settings.isPortraitMode ? "true" : "false");
   // Serial.print("MAX_X: ");
@@ -399,6 +403,19 @@ void loop() {
   int buttonState = digitalRead(PIN_BUTTON_2);
   if (buttonState == LOW) {
     //do something if button is pressed
+  }
+
+  if (settings.displayTest == true) {
+    Serial.println(settings.displayTest);
+
+    std::string packets[] = {"AAD6EA430713291D21858800E8AB", "AAD6EA4307235E569283240000AB", "AAD6EA430733878CB681228030AB"};
+    
+    for (const std::string& packet : packets) {
+      PacketDecoder decoder(packet); 
+      std::string decoded = decoder.decode();
+    }
+
+    sleep(30);
   }
 
   if (settings.disableBLE == false) {
