@@ -230,7 +230,7 @@ void displayReader() {
 }
 
 void loadSettings() {
-  settings.wifiMode = preferences.getString("wifiMode", "WIFI_AP");
+  settings.wifiMode = preferences.getString("wifiMode", "WIFI_MODE_AP");
 
   settings.ssid = preferences.getString("ssid", "v1display");
   settings.password = preferences.getString("password", "password123");
