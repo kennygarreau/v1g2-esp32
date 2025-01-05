@@ -2,6 +2,41 @@
 
 This is a remote display for the Valentine One Gen 2 radar detector written in C++, inspired by SquirrelMaster on [rdforum](http://rdforum.org)
 
+## Major Update - January 5, 2025 ##
+
+This is a major update - **be SURE to update the filesystem!**.
+
+**CHANGELOG:**
+  - Added Web UI which includes
+      1. Desktop or Mobile-friendly interface
+      2. GPS-fed Landing page (you'll forever be in London if GPS is disabled)
+      3. Drop-down will show the currently configured user settings on the V1
+      4. V1 details available on the home screen
+      5. Configuration settings for customizing the V1 and the display interface
+  - Added OTA update functionality via web UI (covers both firmware and filesystem)
+  - Added GPS capability (requires a Neo6m controller and antenna) **NOTE: the pin config is currently untested**
+  - Performance improvements, particularly with display response time
+  - Minor bug fixes
+
+  The defaults when using the display are as follows:
+  - Display Orientation: Portrait (plug on bottom)
+  - WiFi Mode: AP (direct connect)
+  - SSID/Password/IP: see below
+  - Bluetooth enabled (planned for deprecation)
+  - GPS disabled
+  - Units: Imperial (mph)
+  - Low-speed threshold: 35
+  - V1 display blanked
+  - Bluetooth icon visible
+  - Display test disabled
+
+  **ISSUES:** 
+  1. landscape mode needs updating to be aesthetically pleasing
+  2. Text/arrow color settings currently don't work
+  3. The low-speed threshold does not do dynamic conversions if you change your units type; eg., if your units are Imperial and you set low-speed threshold to 35, it will be in mph. If you then change the unit type to Metric, the low-speed threshold will be 35kph.
+
+  As always if there's any feedback please DM me on rdforum or post an issue here.
+
 Connectivity is via Bluetooth Low Energy (BLE) and currently has only been tested as a solo accessory. If you want to use this along
 with another accessory or app such as JBV1, you will need a [V1Connection LE](https://store.valentine1.com/store/item.asp?i=20232). Again
 this is untested and is something I'll be considering in a future release. A quick run-down of the radar-related features:
@@ -21,14 +56,11 @@ Here's what's done in the current release:
     - SSID: v1display
     - Password: password123
     - IP: 192.168.242.1
-- Web-based UI for configuration and requesting device details (needs work)
+- Web-based UI for configuration and requesting device details
 - Portrait and Landscape modes
 - "Store mode" for comparing portrait vs landscape (useful if modifying colors/layout)
 
-Here's the TODO as of May 16, 2024: (in descending order of priority)
-- Deeper integration between web front-end and ESP32 backend
-- Add OTA functionality
-- Further code optimization and consolidation (a bit messy on initial push)
+Here's the TODO as of January 5, 2025: (in descending order of priority)
 - Add graphics/screenshots into this README
 - Figure out something to do with the buttons on the front?
 
