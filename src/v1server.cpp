@@ -1,8 +1,8 @@
 /*
  * Valentine V1 Gen2 Remote Display
- * version: v0.1
+ * version: v0.9.1.4
  * Author: Kenny G
- * Date: 2024.April 8
+ * Date: 2025.Jan.04
  * License: GPL 3.0
  */
 
@@ -10,7 +10,8 @@
 #include <Preferences.h>
 #include <SPIFFS.h>
 #include "TFT_eSPI.h"
-#include "WebServer.h"
+#include <ESPAsyncWebServer.h>
+#include <ArduinoJson.h>
 #include "BLEDevice.h"
 #include "pin_config.h"
 #include "v1_config.h"
@@ -18,14 +19,15 @@
 #include "v1_tft.h"
 #include "v1_fs.h"
 #include "nunitoFont.h"
+#include <TinyGPS++.h>
+#include "web.h"
 
-WebServer server(80);
+AsyncWebServer server(80);
 IPAddress local_ip(192, 168, 242, 1);
 IPAddress gateway(192, 168, 242, 1);
 IPAddress subnet(255, 255, 255, 0);
 
 BLERemoteService* dataRemoteService;
-BLERemoteService* infoRemoteService;
 BLERemoteCharacteristic* infDisplayDataCharacteristic = nullptr; // characteristic for obtaining v1 display data
 BLERemoteCharacteristic* clientWriteCharacteristic = nullptr; // characteristic for client writes
 BLEClient* pClient = nullptr;
@@ -34,27 +36,25 @@ bool connected = false;
 
 static bool laserAlert = false;
 String hexData = "";
+static String previousHexData = "";
 static std::string bogeyValue, barValue, bandValue, directionValue;
 
 TFT_eSPI tft = TFT_eSPI();
 DisplayController displayController(tft);
 TFT_eSprite& dispSprite = displayController.getSprite();
-TFT_eSprite signalStrengthDisplay = TFT_eSprite(&tft);
+TFT_eSprite signalStrengthSprite = TFT_eSprite(&tft);
+int rssiSpriteWidth = 24;
+int rssiSpriteHeight = 12;
 
+GPSData gpsData;
+TinyGPSPlus gps;
+HardwareSerial gpsSerial(1);
+int currentSpeed = 0;
+
+v1Settings settings;
+DisplayConstants selectedConstants;
 Preferences preferences;
 
-struct v1Settings {
-  int displayOrientation;
-  uint16_t textColor;
-  String ssid;
-  String password;
-  String wifiMode;
-  bool isPortraitMode;
-  bool disableBLE;
-  bool displayTest;
-  };
-v1Settings settings;
-bool isPortraitMode;
 int loopCounter = 0;
 unsigned long lastMillis = 0;
 
@@ -63,12 +63,13 @@ DisplayConstants portraitConstants = {170, 320, 10, 160, 54, 10, 96, 110, 32, 80
 DisplayConstants landscapeConstants = {320, 170, 50, 20, 48, 50, 144, 244, 39, 128, 20, 32, 32, 188, 96, 112, 14, 10, 128, 20, 5,
   244, 148, 128, 20, 84, 32, 35, 12, 6, 18, 3};
 
-//DisplayConstants selectedConstants = settings.isPortraitMode ? portraitConstants : landscapeConstants;
-DisplayConstants selectedConstants;
-
 const uint8_t notificationOn[] = {0x1, 0x0};
 
 SPIFFSFileManager fileManager;
+
+void requestMute() {
+  clientWriteCharacteristic->writeValue((uint8_t*)Packet::reqMuteOn(), 7, false);
+}
 
 void scanAndConnect() {
   BLEScanResults foundDevices = pBLEScan->start(5);
@@ -88,8 +89,8 @@ void scanAndConnect() {
 
 class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
   void onResult(BLEAdvertisedDevice advertisedDevice) {
-    Serial.print("BLE Advertised Device found: ");
-    Serial.println(advertisedDevice.toString().c_str());
+    // Serial.print("BLE Advertised Device found: ");
+    // Serial.println(advertisedDevice.toString().c_str());
   }
 };
 
@@ -118,8 +119,12 @@ static void notifyDisplayCallback(BLERemoteCharacteristic* pCharacteristic, uint
       hexData += hexBuffer;
     }
     // uncomment below for debug before entry into the payload calls
-    //Serial.print("HEX rcvd: ");
-    //Serial.println(hexData);
+    if (hexData != previousHexData) {
+      // Serial.print("HEX rcvd: ");
+      // Serial.println(hexData);
+      
+      previousHexData = hexData;
+    }
   }
 }
 
@@ -147,62 +152,42 @@ void wifiConnect() {
   if (WIFI_MODE == WIFI_MODE_AP) {
     WiFi.softAP(settings.ssid, settings.password);
     WiFi.softAPConfig(local_ip, gateway, subnet);
-  }
-  //WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-
-}
-
-void startupInfo() {
-  if (pClient && pClient->isConnected()) {
-    if (!dataRemoteService) {
-      dataRemoteService = pClient->getService(bmeServiceUUID);
-      if (dataRemoteService == nullptr) {
-        Serial.println("Failed to find infDisplayData service.");
-        return;
-      }
-    }
-  clientWriteCharacteristic = dataRemoteService->getCharacteristic(clientWriteUUID);
-    if (clientWriteCharacteristic != nullptr) {
-      clientWriteCharacteristic->writeValue((uint8_t*)Packet::reqVersion(), 1, false);
-      delay(250);
-      infDisplayDataCharacteristic = dataRemoteService->getCharacteristic(infDisplayDataUUID);
-      infDisplayDataCharacteristic->getDescriptor(BLEUUID((uint16_t)0x2902))->writeValue((uint8_t*)notificationOn, 2, true);
-    }
+  } else if (WIFI_MODE == WIFI_STA) {
+    WiFi.begin(settings.ssid, settings.password);
   }
 }
 
-// void getHardwareInfo() {
-//   if (pClient && pClient->isConnected()) {
-//     if (!infoRemoteService) {
-//       infoRemoteService = pClient->getService(deviceInfoUUID);
-//       if (infoRemoteService == nullptr) {
-//         Serial.println("Failed to find infoRemoteService");
-//         return;
-//       }
-//     }
-  
-//   std::map<std::string, BLERemoteCharacteristic*>* pCharacteristics = infoRemoteService->getCharacteristics();
-//     if (pCharacteristics) {
-//       if (pCharacteristics->count("00002A29-0000-1000-8000-00805F9B34FB")) {
-//           BLERemoteCharacteristic* manufacturerIDChar = (*pCharacteristics)["00002A29-0000-1000-8000-00805F9B34FB"];
-//           std::string manufacturerIDValue = manufacturerIDChar->readValue();
-//           Serial.println(manufacturerIDValue.c_str());
-//       }
+void queryDeviceInfo(BLEClient* pClient) {
+  BLERemoteService* pService = pClient->getService(deviceInfoUUID);
 
-//       if (pCharacteristics->count("00002A27-0000-1000-8000-00805F9B34FB")) {
-//           BLERemoteCharacteristic* hardwareRevisionChar = (*pCharacteristics)["00002A27-0000-1000-8000-00805F9B34FB"];
-//           std::string hardwareRevisionValue = hardwareRevisionChar->readValue();
-//           Serial.println(hardwareRevisionValue.c_str());
-//       }
+  if (pService == nullptr) {
+    Serial.println("Device Information Service not found.");
+    return;
+  }
 
-//       if (pCharacteristics->count("00002A24-0000-1000-8000-00805F9B34FB")) {
-//           BLERemoteCharacteristic* modelNumberChar = (*pCharacteristics)["00002A24-0000-1000-8000-00805F9B34FB"];
-//           std::string modelNumberValue = modelNumberChar->readValue();
-//           Serial.println(modelNumberValue.c_str());
-//       }
-//     }
-//   }
-// }
+  struct CharacteristicMapping {
+    const char* name;
+    const char* uuid;
+    std::string* storage;
+  } characteristics[] = {
+    {"Manufacturer Name", "2A29", &manufacturerName},
+    {"Model Number", "2A24", &modelNumber},
+    {"Serial Number", "2A25", &serialNumber},
+    {"Hardware Revision", "2A27", &hardwareRevision},
+    {"Firmware Revision", "2A26", &firmwareRevision},
+    {"Software Revision", "2A28", &softwareRevision}
+  };
+
+  for (const auto& charInfo : characteristics) {
+    BLERemoteCharacteristic* pCharacteristic = pService->getCharacteristic(BLEUUID(charInfo.uuid));
+    if (pCharacteristic != nullptr) {
+      *charInfo.storage = pCharacteristic->readValue();
+      Serial.printf("%s: %s\n", charInfo.name, charInfo.storage->c_str());
+    } else {
+      Serial.printf("%s not found.\n", charInfo.name);
+    }
+  }
+}
 
 void displayReader() {
   if (pClient && pClient->isConnected()) {
@@ -218,17 +203,24 @@ void displayReader() {
   if (pCharacteristics) {
     for (auto& characteristic : *pCharacteristics) {
       if (characteristic.first == clientWriteUUID.toString()) {
-        Serial.println("Client write characteristic found");
+        //Serial.println("Client write characteristic found");
         clientWriteCharacteristic = dataRemoteService->getCharacteristic(clientWriteUUID);
         if (clientWriteCharacteristic != nullptr) {
-          clientWriteCharacteristic->writeValue((uint8_t*)Packet::reqStartAlertData(), 7, false);
-          delay(250);
           infDisplayDataCharacteristic = dataRemoteService->getCharacteristic(infDisplayDataUUID);
           infDisplayDataCharacteristic->getDescriptor(BLEUUID((uint16_t)0x2902))->writeValue((uint8_t*)notificationOn, 2, true);
-        }
+          delay(100);
+          
+          // If we allow the user to select full blank vs BT illuminated, we may need to modify the buffer size
+          if (settings.turnOffDisplay) {
+            clientWriteCharacteristic->writeValue((uint8_t*)Packet::reqTurnOffMainDisplay(), 8, false);
+            delay(50);
+          }
+
+          clientWriteCharacteristic->writeValue((uint8_t*)Packet::reqStartAlertData(), 7, false);
+          }
       }
       else if (characteristic.first == infDisplayDataUUID.toString()) {
-        Serial.println("Data display characteristic found");
+        //Serial.println("Data display characteristic found");
         infDisplayDataCharacteristic = dataRemoteService->getCharacteristic(infDisplayDataUUID);
         infDisplayDataCharacteristic->getDescriptor(BLEUUID((uint16_t)0x2902))->writeValue((uint8_t*)notificationOn, 2, true);
         }
@@ -237,53 +229,38 @@ void displayReader() {
   }
 }
 
-void handleFile(const char* filename, const char* contentType) {
-    File file = fileManager.openFile(filename, "r");
-    if (!file) {
-        server.send(404, "text/plain", "File not found");
-        return;
-    }
-    server.streamFile(file, contentType);
-    file.close();
-}
-
-void handleNotFound() {
-  server.send(404, "text/html", "File not found");
-}
-
-void handleRoot() {
-  handleFile("/index.html", "text/html");
-}
-
-void handleCSS() {
-  handleFile("/style.css", "text/css");
-}
-
-void handleSettings() {
-  handleFile("/settings.html", "text/html");
-}
-
-void handleUpdate() {
-  handleFile("/update.html", "text/html");
-}
-
 void loadSettings() {
-  // 0 = portrait, 3 = landscape
-  //settings.isPortraitMode = preferences.getBool("isPortraitMode", true);
-  settings.displayOrientation = preferences.getInt("displayOrientation", 0);
-  settings.textColor = preferences.getUShort("textColor", TFT_WHITE);
+  settings.wifiMode = preferences.getString("wifiMode", "WIFI_AP");
+
   settings.ssid = preferences.getString("ssid", "v1display");
   settings.password = preferences.getString("password", "password123");
   settings.disableBLE = preferences.getBool("disableBLE", false);
   settings.displayTest = preferences.getBool("displayTest", false);
+  settings.enableGPS = preferences.getBool("enableGPS", false);
+  settings.lowSpeedThreshold = preferences.getInt("lowSpeedThres", 35);
+  settings.unitSystem = preferences.getString("unitSystem", "Imperial");
+  settings.displayOrientation = preferences.getInt("displayOrient", 0);
+
+  if (settings.displayOrientation == 0 || settings.displayOrientation == 2) {
+    settings.isPortraitMode = true;
+  } else {
+    settings.isPortraitMode = false;
+  }
+
+  settings.textColor = preferences.getUInt("textColor", 0xFF0000);
+  settings.turnOffDisplay = preferences.getBool("turnOffDisplay", true);
+  settings.onlyDisplayBTIcon = preferences.getBool("onlyDispBTIcon", true);
+
+  selectedConstants = settings.isPortraitMode ? portraitConstants : landscapeConstants;
+  Serial.println("Panel Width: " + String(selectedConstants.MAX_X));
 }
 
 void saveSelectedConstants(const DisplayConstants& constants) {
-    preferences.putBytes("selectedConstants", &constants, sizeof(DisplayConstants));
+  preferences.putBytes("selectedConstants", &constants, sizeof(DisplayConstants));
 }
 
 void loadSelectedConstants(DisplayConstants& constants) {
-    preferences.getBytes("selectedConstants", &constants, sizeof(DisplayConstants));
+  preferences.getBytes("selectedConstants", &constants, sizeof(DisplayConstants));
 }
 
 int getBluetoothSignalStrength() {
@@ -292,35 +269,40 @@ int getBluetoothSignalStrength() {
 }
 
 void updateSignalStrengthDisplay() {
-    // Clear signal strength display sprite
-    signalStrengthDisplay.fillSprite(TFT_BLACK);
-    // Retrieve and display Bluetooth signal strength
-    int rssi = getBluetoothSignalStrength(); // Function to get Bluetooth signal strength
-    signalStrengthDisplay.setTextColor(TFT_BLUE);
-    signalStrengthDisplay.drawString(String(rssi), 0, 0);
+  // Retrieve and display Bluetooth signal strength
+  int rssi = getBluetoothSignalStrength(); // Function to get Bluetooth signal strength
+
+  // Clear signal strength display sprite
+  signalStrengthSprite.fillSprite(TFT_BLACK);
+  signalStrengthSprite.setTextColor(TFT_BLUE);
+  signalStrengthSprite.drawString(String(rssi), 0, 0);
+}
+
+String formatTime(TinyGPSPlus &gps) {
+  char timeBuffer[10];
+  if (gps.time.isValid()) {
+    snprintf(timeBuffer, sizeof(timeBuffer), "%02d:%02d:%02d", gps.time.hour(), gps.time.minute(), gps.time.second());
+  } else {
+    snprintf(timeBuffer, sizeof(timeBuffer), "00:00:00");
+  }
+  return String(timeBuffer);
 }
 
 void setup()
 {
-  delay(1500);
+  Serial.begin(115200);
+  delay(2000);
+
   pinMode(15, OUTPUT);
   digitalWrite(15, HIGH);
   pinMode(PIN_BUTTON_2, INPUT);
-  Serial.begin(115200);
 
   Serial.println("Reading initial settings...");
   preferences.begin("settings", false);
-  settings.isPortraitMode = preferences.getBool("isPortraitMode", true);
-  settings.displayTest = preferences.putBool("displayTest", false);
-  // Uncomment below for testing display
-  //settings.displayTest = preferences.putBool("displayTest", true);
+  loadSettings();
 
   Serial.print("settings.isPortraitMode is set to: ");
   Serial.println(settings.isPortraitMode ? "true" : "false");
-  // Serial.print("MAX_X: ");
-  // Serial.println(selectedConstants.MAX_X);
-  // Serial.print("MAX_Y: ");
-  // Serial.println(selectedConstants.MAX_Y);
   
   loadSelectedConstants(selectedConstants);
   // if not initialized yet (first boot) - initialize settings
@@ -332,30 +314,27 @@ void setup()
     saveSelectedConstants(selectedConstants);
   }
 
-  loadSettings();
-  Serial.print("settings.displayOrientation is set to: ");
-  Serial.println(String(settings.displayOrientation));
+  preferences.end();
 
-  Serial.print("MAX_X: ");
-  Serial.println(selectedConstants.MAX_X);
+  if (settings.enableGPS) {
+    Serial.println("Initializing GPS...");
+    gpsSerial.begin(BAUD_RATE, SERIAL_8N1, RXD, TXD);
+  }
 
-  Serial.print("MAX_Y: ");
-  Serial.println(selectedConstants.MAX_Y);
-
+  Serial.println("DEBUG: Initializing display...");
   tft.begin();
   
   tft.setRotation(settings.displayOrientation);
   tft.fillScreen(TFT_BLACK);
-  //tft.setTextColor(settings.textColor);
-  //tft.loadFont(nunitoFont);
   
   int rssiSpriteWidth = 30;
   int rssiSpriteHeight = 12;
 
   dispSprite.createSprite(selectedConstants.MAX_X, selectedConstants.MAX_Y - rssiSpriteHeight);
-  signalStrengthDisplay.setColorDepth(8);
-  signalStrengthDisplay.createSprite(rssiSpriteWidth, rssiSpriteHeight);
+  signalStrengthSprite.setColorDepth(8);
+  signalStrengthSprite.createSprite(rssiSpriteWidth, rssiSpriteHeight);
 
+  // TODO: add a failsafe handler for invalid wifi credentials
   Serial.println("Connecting to WiFi");
   wifiSetup();
   wifiConnect();
@@ -364,14 +343,24 @@ void setup()
     Serial.println("Failed to initialize SPIFFS");
     return;
   }
-  Serial.println("SPIFFS mounted succesfully");
 
-  server.on("/", HTTP_GET, handleRoot);
-  server.on("/style.css", HTTP_GET, handleCSS);
-  server.on("/settings.html", HTTP_GET, handleSettings);
-  server.on("/update.html", HTTP_GET, handleUpdate);
-  server.onNotFound(handleNotFound);
-  server.begin();
+ setupWebServer();
+
+  if (settings.displayTest == true) {
+    
+    Serial.println("========================");
+    Serial.println("====  DISPLAY TEST  ====");
+    Serial.println("========================");
+
+    std::string packets[] = {"AAD6EA430713291D21858800E8AB", "AAD6EA4307235E569283240000AB", "AAD6EA430733878CB681228030AB"};
+    
+    for (const std::string& packet : packets) {
+      PacketDecoder decoder(packet); 
+      std::string decoded = decoder.decode(settings.lowSpeedThreshold, currentSpeed);
+    }
+
+    sleep(30);
+  }
 
  if (settings.disableBLE == false) {
   Serial.println("Searching for V1 bluetooth..");
@@ -391,31 +380,20 @@ void setup()
   } else {
     Serial.println("Could not find a V1 connection");
   }
- }
-  preferences.end();
+
+
+  queryDeviceInfo(pClient);
+  }
+ Serial.println("v1g2 firmware version: " + String(FIRMWARE_VERSION));
 
 }
 
 void loop() {  
-  // web server handler
-  server.handleClient();
+  static bool configHasRun = false;
 
   int buttonState = digitalRead(PIN_BUTTON_2);
   if (buttonState == LOW) {
-    //do something if button is pressed
-  }
-
-  if (settings.displayTest == true) {
-    Serial.println(settings.displayTest);
-
-    std::string packets[] = {"AAD6EA430713291D21858800E8AB", "AAD6EA4307235E569283240000AB", "AAD6EA430733878CB681228030AB"};
-    
-    for (const std::string& packet : packets) {
-      PacketDecoder decoder(packet); 
-      std::string decoded = decoder.decode();
-    }
-
-    sleep(30);
+    //TODO: something if button is pressed
   }
 
   if (settings.disableBLE == false) {
@@ -439,22 +417,58 @@ void loop() {
   // decode loop takes 6-7ms
   std::string packet = hexData.c_str();
   PacketDecoder decoder(packet);
-  std::string decoded = decoder.decode();
+  std::string decoded = decoder.decode(settings.lowSpeedThreshold, currentSpeed);
 
   unsigned long currentMillis = millis();
   
-  if (currentMillis - lastMillis >= 1000) {
+  if (currentMillis - lastMillis >= 2000) {
+    
     // uncomment below for debugging
     //Serial.print("Loops executed: ");
     //Serial.println(loopCounter);
     
     updateSignalStrengthDisplay();
-    signalStrengthDisplay.pushSprite(tft.width() - signalStrengthDisplay.width(), tft.height() - signalStrengthDisplay.height());
+    signalStrengthSprite.pushSprite(tft.width() - signalStrengthSprite.width(), tft.height() - signalStrengthSprite.height());
 
+    if (!configHasRun) {
+      if (globalConfig.muteTo.empty()) {
+        Serial.print("User settings not obtained. ");
+        clientWriteCharacteristic->writeValue((uint8_t*)Packet::reqUserBytes(), 7, false);
+      } else {
+        Serial.println("User settings obtained!");
+        configHasRun = true;
+      }
+    }
     lastMillis = currentMillis;
     loopCounter = 0;
   }
 
+  if (settings.enableGPS) {
+    while (gpsSerial.available() > 0) {
+        gps.encode(gpsSerial.read());
+      }
+      if (gps.location.isUpdated()) {
+        gpsData.latitude = gps.location.lat();
+        gpsData.longitude = gps.location.lng();
+        gpsData.satelliteCount = gps.satellites.value();
+        gpsData.time = formatTime(gps);
+
+        if (settings.unitSystem == "Metric") {
+          gpsData.speed = gps.speed.kmph();
+          gpsData.altitude = gps.altitude.meters();
+          currentSpeed = static_cast<int>(gps.speed.kmph());
+        } else {
+          gpsData.speed = gps.speed.mph();
+          gpsData.altitude = gps.altitude.feet();
+          currentSpeed = static_cast<int>(gps.speed.mph());
+        }
+      }
+  }
+
   loopCounter++;
 
+  checkReboot();
+
+  yield();  // Prevent watchdog timeout
+  delay(1);
 }

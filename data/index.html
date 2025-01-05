@@ -4,71 +4,47 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>v1g2.display</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+     crossorigin=""/>
+     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+     crossorigin=""></script>
 </head>
 <body>
-    <nav>
+    <script src="index.js"></script>
+    <nav class="main-navbar">
         <a href="#">Home</a>
         <a href="settings.html">Configuration</a>
         <a href="update.html">Update</a>
     </nav>
-    <div class="container">
-        <h2>ESP32 Board Information</h2>
+    <div class="side-navbar" id="sideNavbar">
+        <button class="user-settings-btn" onclick="toggleNavbar()">☰</button>
+        <h2>User Settings</h2>
         <table>
-            <tr>
-                <th>Field</th>
-                <th>Value</th>
-            </tr>
-            <tr>
-                <td>Manufacturer</td>
-                <td id="manufacturer"></td>
-            </tr>
-            <tr>
-                <td>Model</td>
-                <td id="model"></td>
-            </tr>
-            <tr>
-                <td>Serial Number</td>
-                <td id="serial"></td>
-            </tr>
-            <tr>
-                <td>Hardware Version</td>
-                <td id="hardware-version"></td>
-            </tr>
-            <tr>
-                <td>Firmware Version</td>
-                <td id="firmware-version"></td>
-            </tr>
-            <tr>
-                <td>Software Version</td>
-                <td id="software-version"></td>
-            </tr>
+            <thead>
+                <tr>
+                    <th>Setting</th>
+                    <th>Value</th>
+                </tr>
+            </thead>
+            <tbody id="config-table-body">
+            </tbody>
         </table>
     </div>
-
-    <script>
-        // Function to populate board information
-        function populateBoardInfo() {
-            // Dummy data for demonstration
-            var boardInfo = {
-                manufacturer: "ESP32 Company",
-                model: "ESP32-123",
-                serial: "1234567890",
-                hardwareVersion: "1.0",
-                firmwareVersion: "1.1",
-                softwareVersion: "1.2"
-            };
-
-            document.getElementById("manufacturer").textContent = boardInfo.manufacturer;
-            document.getElementById("model").textContent = boardInfo.model;
-            document.getElementById("serial").textContent = boardInfo.serial;
-            document.getElementById("hardware-version").textContent = boardInfo.hardwareVersion;
-            document.getElementById("firmware-version").textContent = boardInfo.firmwareVersion;
-            document.getElementById("software-version").textContent = boardInfo.softwareVersion;
-        }
-
-        // Call the function to populate board information
-        populateBoardInfo();
-    </script>
+    <div class="hardware-bar">
+        <span id="manufacturer"></span> |
+        <span id="model"></span> |
+        <span id="serial"></span> |
+        <span id="hardware-version"></span> |
+        <span id="firmware-version"></span> |
+        <span id="software-version"></span>
+    </div>
+    <div class="container">
+        <h2>Location Data</h2>
+        <div id="map" style="height: 400px; width: 100%;"></div>
+    </div>
 </body>
 </html>

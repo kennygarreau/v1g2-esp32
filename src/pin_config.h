@@ -43,3 +43,6 @@
 #define PIN_SD_CMD                   13
 #define PIN_SD_CLK                   11
 #define PIN_SD_D0                    12
+
+#define RXD 44
+#define TXD 43

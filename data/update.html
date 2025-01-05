@@ -1,11 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>v1g2.display</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <link rel="stylesheet" href="style.css">
+    <script src="update.js"></script>
 </head>
+
 <body>
     <nav>
         <a href="/">Home</a>
@@ -13,39 +17,22 @@
         <a href="#">Update</a>
     </nav>
     <script src='https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js'></script>
-    <form method='POST' action='#' enctype='multipart/form-data' id='upload_form'>
-       <input type='file' name='update'>
-            <input type='submit' value='Update'>
-        </form>"
-     <div id='prg'>progress: 0%</div>
-     <script>
-      $('form').submit(function(e){
-      e.preventDefault();
-      var form = $('#upload_form')[0];
-      var data = new FormData(form);
-       $.ajax({
-      url: '/update',
-      type: 'POST',
-      data: data,
-      contentType: false,
-      processData:false,
-      xhr: function() {
-      var xhr = new window.XMLHttpRequest();
-      xhr.upload.addEventListener('progress', function(evt) {
-      if (evt.lengthComputable) {
-      var per = evt.loaded / evt.total;
-      $('#prg').html('progress: ' + Math.round(per*100) + '%');
-      }
-      }, false);
-      return xhr;
-      },
-      success:function(d, s) {
-      console.log('success!')
-     },
-     error: function (a, b, c) {
-     }
-     });
-     });
-     </script>
+    
+    <!-- Firmware Update Form -->
+    <form enctype='multipart/form-data' id='upload_form'>
+        <h3>Firmware Update</h3>
+        <input type='file' name='update'>
+        <input type='submit' value='Update'>
+        <div id='prg'>progress: 0%</div>
+    </form>
+
+    <!-- Filesystem Update Form -->
+    <form enctype="multipart/form-data" id="upload_filesystem_form">
+        <h3>Filesystem Update</h3>
+        <input type="file" name="filesystem" required>
+        <input type="submit" value="Update">
+        <div id="fs_prg">Progress: 0%</div>
+    </form>
 </body>
+
 </html>

@@ -21,9 +21,6 @@ public:
     void drawHorizontalBars(int y, int strength, uint16_t color);
     void horizGradStr(int x, int y, int barHeight, int strength);
     void displayFreq(float freqVal, int x, int y, uint16_t color);
-    void displayTestHorizontal();
-    void displayTestPortrait_2();
-    void displayTestPortrait_3();
     //void displayFrequency(float frequency, int index, uint16_t color);
     // void displayLaser(int x, uint16_t color);
     // void displayKa(int x, uint16_t color);

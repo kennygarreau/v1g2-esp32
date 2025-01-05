@@ -19,7 +19,10 @@ static int alertCountValue, alertIndexValue;
 float freqGhz;
 alertsVector alertTable;
 TFT_eSprite& sprite = displayController.getSprite();
+Config globalConfig;
 
+extern void requestMute();
+bool muted = false;
 uint8_t packet[10];
 
 PacketDecoder::PacketDecoder(const std::string& packet) : packet(packet) {}
@@ -104,6 +107,80 @@ int combineMSBLSB(const std::string& msb, const std::string& lsb) {
         return -1;
     }
     return (msbDecimal * 256) + lsbDecimal;
+}
+
+void decodeByteZero(const std::string& userByte) {
+    if (!userByte.empty()) {
+        uint8_t byteValue = (uint8_t) strtol(userByte.c_str(), nullptr, 16);
+
+        globalConfig.xBand = byteValue & 0b00000001;
+        globalConfig.kBand = byteValue & 0b00000010;
+        globalConfig.kaBand = byteValue & 0b00000100;
+        globalConfig.laserBand = byteValue & 0b00001000;
+        globalConfig.muteTo = (byteValue & 0b00010000) ? "Muted Volume" : "Zero";
+        globalConfig.bogeyLockLoud = byteValue & 0b00100000;
+        globalConfig.rearMute = byteValue & 0b01000000;
+        globalConfig.kuBand = byteValue & 0b10000000;
+    }
+}
+
+void decodeByteOne(const std::string& userByte) {
+    if (!userByte.empty()) {
+        uint8_t byteValue = (uint8_t) strtol(userByte.c_str(), nullptr, 16);
+        
+        globalConfig.euro = byteValue & 0b00000001;
+        globalConfig.kVerifier = byteValue & 0b00000010;
+        globalConfig.rearLaser = byteValue & 0b00000100;
+        globalConfig.customFreqDisabled = byteValue & 0b00001000;
+        globalConfig.kaAlwaysPrio = byteValue & 0b00010000;
+        globalConfig.fastLaserDetection = byteValue & 0b00100000;
+        globalConfig.kaSensitivityBit0 = (byteValue & 0b01000000) ? 1 : 0;
+        globalConfig.kaSensitivityBit1 = (byteValue & 0b10000000) ? 2 : 0;
+
+        int kaSensitivity = globalConfig.kaSensitivityBit0 + globalConfig.kaSensitivityBit1;
+        switch (kaSensitivity) {
+            case 0:
+                globalConfig.kaSensitivity = "Max Range*";
+                break;
+            case 1:
+                globalConfig.kaSensitivity = "Relaxed";
+                break;
+            case 2:
+                globalConfig.kaSensitivity = "2020 Original";
+                break;
+            case 3:
+                globalConfig.kaSensitivity = "Max Range";
+                break;
+        }
+    }
+}
+
+void decodeByteTwo(const std::string& userByte) {
+    if (!userByte.empty()) {
+        uint8_t byteValue = (uint8_t) strtol(userByte.c_str(), nullptr, 16);
+        
+        globalConfig.startupSequence = byteValue & 0b00000001;
+        globalConfig.restingDisplay = byteValue & 0b00000010;
+        globalConfig.bsmPlus = byteValue & 0b00000100;
+        globalConfig.autoMuteBit0 = (byteValue & 0b00001000) ? 1 : 0;
+        globalConfig.autoMuteBit1 = (byteValue & 0b00010000) ? 2 : 0;
+
+        int autoMute = globalConfig.autoMuteBit0 + globalConfig.autoMuteBit1;
+        switch (autoMute) {
+            case 0:
+                globalConfig.autoMute = "Off*";
+                break;
+            case 1:
+                globalConfig.autoMute = "On";
+                break;
+            case 2:
+                globalConfig.autoMute = "On with Unmute 5+";
+                break;
+            case 3:
+                globalConfig.autoMute = "Off";
+                break;
+        }
+    }
 }
 
 std::string PacketDecoder::decodeDisplayData() {
@@ -264,7 +341,7 @@ void PacketDecoder::decodeAlertData(const alertsVector& alerts) {
             displayController.displayText(bandValue.c_str(), selectedConstants.MHZ_DISP_X, selectedConstants.MHZ_DISP_Y, TFT_WHITE);
             arrowColor = TFT_YELLOW;
             sprite.pushSprite(0,0);
-            delay(1500);
+            delay(2500);
         }
         
         if (bandValue != "LASER") {
@@ -279,7 +356,9 @@ void PacketDecoder::decodeAlertData(const alertsVector& alerts) {
             }
 
             // paint the frequency of the alert
-            displayController.displayFreq(freqGhz, selectedConstants.MHZ_DISP_X, selectedConstants.MHZ_DISP_Y + (selectedConstants.MHZ_DISP_Y_OFFSET * i), TFT_WHITE);
+            if (freqGhz > 0) {
+                displayController.displayFreq(freqGhz, selectedConstants.MHZ_DISP_X, selectedConstants.MHZ_DISP_Y + (selectedConstants.MHZ_DISP_Y_OFFSET * i), TFT_WHITE);
+            }
         }
         // enable below for debugging
         std::string decodedPayload = "INDX:" + std::to_string(alertIndexValue) +
@@ -296,8 +375,8 @@ void PacketDecoder::decodeAlertData(const alertsVector& alerts) {
     }
 }
 
-std::string PacketDecoder::decode() {
-    //unsigned long startTimeMillis = millis();
+std::string PacketDecoder::decode(int lowSpeedThreshold, int currentSpeed) {
+    unsigned long startTimeMillis = millis();
 
     std::string sof = packet.substr(0, 2);
     if (sof != "AA") {
@@ -312,19 +391,9 @@ std::string PacketDecoder::decode() {
     std::string packetID = packet.substr(6, 2);
     
     if (packetID == "31") {
-        // we should add some logic here around not processing identical packets
-        // bool infDataUpdated;
-        // std::string payload = packet.substr(10, packet.length() - 12);
+        // does this need logic here around not processing identical packets?
+        return decodeDisplayData();
 
-        // if (payload == lastPayload) {
-        //     infDataUpdated = false;
-        //     return "";
-        // }
-        // else {
-        //     lastPayload = payload;
-        //     infDataUpdated = true;
-            return decodeDisplayData();
-        //}
     }
     else if (packetID == "43") {
         /* we should do a light decode here */
@@ -369,23 +438,38 @@ std::string PacketDecoder::decode() {
             } else {
                 if (alertCountValue == 0) {
                     // this should blank the screen after the alertTable is cleared (no alerts present)
+                    muted = false;
                     sprite.fillScreen(TFT_BLACK);
                 }
                 // is there anything to be done here?
             }
             sprite.pushSprite(0,0);
-        //unsigned long elapsedTimeMillis = millis() - startTimeMillis;
+        unsigned long elapsedTimeMillis = millis() - startTimeMillis;
         //Serial.println(elapsedTimeMillis);
         }
         return "";
+    }
+    else if (packetID == "12") {
+        std::string userByteZero = packet.substr(10, 2);
+        std::string userByteOne = packet.substr(12, 2);
+        std::string userByteTwo = packet.substr(14, 2);
+
+        decodeByteZero(userByteZero);
+        decodeByteOne(userByteOne);
+        decodeByteTwo(userByteTwo);
+    }
+    else if (packetID == "66") {
+        Serial.println("infV1Busy");
+    }
+    else if (packetID == "67") {
+        Serial.println("respDataError encountered");
     }
     return "";
 }
 
 /*
-the functions below are responsible for generating and sending packets to the v1.
-calculating checksums for inbound packets incurs unnecessary overhead therefore
-is not done in any of the functions above.
+the functions below are responsible for generating and sending packets to the v1. calculating checksums for 
+inbound packets incurs unnecessary overhead therefore is not done in any of the functions above.
 */
 
 uint8_t Packet::calculateChecksum(const uint8_t *data, size_t length) {
@@ -404,25 +488,31 @@ uint8_t* Packet::constructPacket(uint8_t destID, uint8_t sendID, uint8_t packetI
     packet[4] = payloadLength;
 
     if (payloadLength > 1) {
-        for (int i = 0; i < payloadLength - 2; i++) {
+        for (int i = 0; i < payloadLength - 1; i++) {
             packet[5 + i] = payloadData[i];
         }
-        packet[5 + payloadLength - 2] = calculateChecksum(packet, 5 + payloadLength - 2);
-        packet[5 + payloadLength - 1] = PACKETEND;
+        packet[5 + payloadLength - 1] = calculateChecksum(packet, 5 + payloadLength - 1);
+        packet[5 + payloadLength] = PACKETEND;
     } else {
         packet[4] = 0x01;
         packet[5] = calculateChecksum(packet, 5);
         packet[6] = PACKETEND;
     }
-    Serial.print("reqStartAlertData packet sent: ");
-    Serial.print(packet[0], HEX);
-    Serial.print(packet[1], HEX);
-    Serial.print(packet[2], HEX);
-    Serial.print(packet[3], HEX);
-    Serial.print(packet[4], HEX);
-    Serial.print(packet[5], HEX);
-    Serial.println(packet[6], HEX);
+
+    // this is broken and needs fixing, but maybe not?
+    /* Serial.print("Packet sent: ");
+    for (int i = 0; i <= sizeof(packet + 2); i++) {
+        Serial.print(packet[i], HEX);
+    }
+    Serial.println(); */
     return packet;
+}
+
+uint8_t* Packet::reqTurnOffMainDisplay() {
+    uint8_t payloadData[] = {0x01, 0x01};
+    uint8_t payloadLength = sizeof(payloadData) / sizeof(payloadData[0]);
+    Serial.println("Sending reqTurnOffMainDisplay packet");
+    return constructPacket(DEST_V1, REMOTE_SENDER, PACKET_ID_REQTURNOFFMAINDISPLAY, const_cast<uint8_t*>(payloadData), payloadLength, packet);
 }
 
 uint8_t* Packet::reqStartAlertData() {
@@ -453,11 +543,24 @@ uint8_t* Packet::reqSerialNumber() {
     return constructPacket(DEST_V1, REMOTE_SENDER, PACKET_ID_REQSERIALNUMBER, const_cast<uint8_t*>(payloadData), payloadLength, packet);
 }
 
-uint8_t* Packet::reqTurnOffMainDisplay() {
+uint8_t* Packet::reqTurnOnMainDisplay() {
     uint8_t payloadData[] = {0x01};
     uint8_t payloadLength = sizeof(payloadData) / sizeof(payloadData[0]);
-    Serial.println("Sending reqTurnOffMainDisplay packet");
-    return constructPacket(DEST_V1, REMOTE_SENDER, PACKET_ID_REQTURNOFFMAINDISPLAY, const_cast<uint8_t*>(payloadData), payloadLength, packet);
+    Serial.println("Sending reqTurnOnMainDisplay packet");
+    return constructPacket(DEST_V1, REMOTE_SENDER, PACKET_ID_REQTURNONMAINDISPLAY, const_cast<uint8_t*>(payloadData), payloadLength, packet);
+}
+
+uint8_t* Packet::reqMuteOn() {
+    uint8_t payloadData[] = {0x01};
+    uint8_t payloadLength = sizeof(payloadData) / sizeof(payloadData[0]);
+    return constructPacket(DEST_V1, REMOTE_SENDER, PACKET_ID_REQMUTEON, const_cast<uint8_t*>(payloadData), payloadLength, packet);
+}
+
+uint8_t* Packet::reqMuteOff() {
+    uint8_t payloadData[] = {0x01};
+    uint8_t payloadLength = sizeof(payloadData) / sizeof(payloadData[0]);
+    Serial.println("Sending reqMuteOff packet");
+    return constructPacket(DEST_V1, REMOTE_SENDER, PACKET_ID_REQMUTEOFF, const_cast<uint8_t*>(payloadData), payloadLength, packet);
 }
 
 uint8_t* Packet::reqBatteryVoltage() {
@@ -465,4 +568,18 @@ uint8_t* Packet::reqBatteryVoltage() {
     uint8_t payloadLength = sizeof(payloadData) / sizeof(payloadData[0]);
     Serial.println("Sending reqBatteryVoltage packet");
     return constructPacket(DEST_V1, REMOTE_SENDER, PACKET_ID_REQBATTERYVOLTAGE, const_cast<uint8_t*>(payloadData), payloadLength, packet);
+}
+
+uint8_t* Packet::reqCurrentVolume() {
+    uint8_t payloadData[] = {0x01};
+    uint8_t payloadLength = sizeof(payloadData) / sizeof(payloadData[0]);
+    Serial.println("Sending reqCurrentVolume packet");
+    return constructPacket(DEST_V1, REMOTE_SENDER, PACKET_ID_REQCURRENTVOLUME, const_cast<uint8_t*>(payloadData), payloadLength, packet);
+}
+
+uint8_t* Packet::reqUserBytes() {
+    uint8_t payloadData[] = {0x01};
+    uint8_t payloadLength = sizeof(payloadData) / sizeof(payloadData[0]);
+    Serial.println("Sending reqUserBytes packet");
+    return constructPacket(DEST_V1, REMOTE_SENDER, PACKET_ID_REQUSERBYTES, const_cast<uint8_t*>(payloadData), payloadLength, packet);
 }
